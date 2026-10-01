@@ -75,6 +75,7 @@ log "Setting Kernel variant"
 case "$KSU" in
   "SKSU") VARIANT="SukiSU-Ultra" ;;
   "RSKSU") VARIANT="ReSukiSU" ;;
+  "KSUN") VARIANT="KernelSU-Next" ;;
   "KSU") VARIANT="KernelSU" ;;
   "no") VARIANT="Vanilla" ;;
   "vnlto") VARIANT="Vanilla+NoLTO" ;;
@@ -219,7 +220,10 @@ if susfs_included && [ "$KSU" = "RSKSU" ]; then
   apply_susfs_patches
 
 fi
-
+if [ "$KSU" = "KSUN" ]; then
+  log "KernelSU-Next included"
+  install_ksu "KernelSU-Next/KernelSU-Next" "next"
+fi
 if [ "$KSU" = "KSU" ]; then
   log "KernelSU included"
   if ! susfs_included; then
