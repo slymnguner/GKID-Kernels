@@ -374,7 +374,7 @@ apply_extract_cert_key_pass_patch() {
 
 fix_task_mmu_corruption() {
     local file="fs/proc/task_mmu.c"
-    local patch="$KERNEL_PATCHES/susfs/0001-fixup-Remove-broken-hunk-from-task_mmu.c-SUSFS-patch.patch"
+    local patch="$KERNEL_PATCHES/susfs/0001-fix-sync-task_mmu.c-SuSFS-patch-with-upstream.patch"
 
     if [[ ! -f "$file" ]]; then
         warning "task_mmu.c not found, skipping fix"
