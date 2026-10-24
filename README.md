@@ -75,8 +75,12 @@ Your donations keep this project alive! I spend countless hours maintaining kern
 | KernelSU+SuSFS | ✅ | ✅ | Full | ❌ |
 | KSU+SuSFS+MM | ✅ | ✅ | Full | ❌ |
 | BakaSU+SuSFS | ✅ | ✅ | Full | ❌ |
+| KernelSU-Next | ✅ | ❌ | Full | ❌ |
+| KernelSU-Next+SuSFS | ✅ | ✅ | Full | ❌ |
 | Compat+KSU+SuSFS | ✅ | ✅ | ❌ | ✅ |
 | Compat+BakaSU+SuSFS | ✅ | ✅ | ❌ | ✅ |
+| Compat+KernelSU-Next | ✅ | ❌ | ❌ | ✅ |
+| Compat+KernelSU-Next+SuSFS | ✅ | ✅ | ❌ | ✅ |
 
 **Optional features** (enable on any variant):
 - 🐳 DroidSpaces - Linux userspace support

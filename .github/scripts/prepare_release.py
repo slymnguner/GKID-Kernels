@@ -195,8 +195,12 @@ Your donations keep this project alive! I spend countless hours maintaining kern
 | KernelSU+SuSFS | ✅ | ✅ | Full | ❌ |
 | KSU+SuSFS+MM | ✅ | ✅ | Full | ❌ |
 | BakaSU+SuSFS | ✅ | ✅ | Full | ❌ |
+| KernelSU-Next | ✅ | ❌ | Full | ❌ |
+| KernelSU-Next+SuSFS | ✅ | ✅ | Full | ❌ |
 | Compat+KSU+SuSFS | ✅ | ✅ | ❌ | ✅ |
 | Compat+BakaSU+SuSFS | ✅ | ✅ | ❌ | ✅ |
+| Compat+KernelSU-Next | ✅ | ❌ | ❌ | ✅ |
+| Compat+KernelSU-Next+SuSFS | ✅ | ✅ | ❌ | ✅ |
 
 **Not sure? Use a `Compat` variant first**: it fixes most boot issues. Full feature breakdown, LTO explanation, and troubleshooting live in the [README](https://github.com/ahmed-alnassif/GKID-Kernels#-build-variants).
 
@@ -304,6 +308,13 @@ Test both and use whichever performs better on your network.
 {read_or_default("release-artifacts/BakaSU_changelog.txt")}
 
 **Full commit history:** [Browse all commits](https://github.com/Baka-SU/BakaSU/commits/main)
+
+---
+**KernelSU Next changelog (last 5 commits):**
+
+{read_or_default("release-artifacts/KernelSU-Next_changelog.txt")}
+
+**Full commit history:** [Browse all commits](https://github.com/KernelSU-Next/KernelSU-Next/commits/next)
 
 ---
 > [!Tip]
