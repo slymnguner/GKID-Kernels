@@ -314,7 +314,7 @@ Test both and use whichever performs better on your network.
 
 {read_or_default("release-artifacts/KernelSU-Next_changelog.txt")}
 
-**Full commit history:** [Browse all commits](https://github.com/KernelSU-Next/KernelSU-Next/commits/next)
+**Full commit history:** [Browse all commits](https://github.com/KernelSU-Next/KernelSU-Next/commits/dev)
 
 ---
 > [!Tip]
