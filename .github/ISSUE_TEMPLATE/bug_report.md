@@ -3,7 +3,7 @@ name: Kernel Bug Report
 about: Report boot issues, crashes, or feature malfunctions
 title: "[BUG]: "
 labels: bug
-assignees: ahmed-alnassif
+assignees: slymnguner
 
 ---
 

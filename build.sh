@@ -4,10 +4,10 @@ WORKDIR="$(pwd)"
 RELEASE_DIR="$WORKDIR/artifacts"
 
 KERNEL_NAME="GKID"
-USER="ahmed-alnassif"
+USER="slymnguner"
 HOST="GKID"
 TIMEZONE="Asia/Damascus"
-ANYKERNEL_REPO="https://github.com/ahmed-alnassif/AK3-GKID"
+ANYKERNEL_REPO="https://github.com/slymnguner/AK3-GKID"
 
 KERNEL_DEFCONFIG="gki_defconfig"
 
@@ -19,7 +19,7 @@ RELEASE="$(date +v%y.%m.%d)${RUN_NUM}"
 
 mkdir -p $RELEASE_DIR
 
-GKI_RELEASES_REPO="https://github.com/ahmed-alnassif/GKID-Kernels"
+GKI_RELEASES_REPO="https://github.com/${GITHUB_REPOSITORY:-slymnguner/GKID-Kernels}"
 AK3_ZIP_NAME="$KERNEL_NAME-VARIANT-REL-KVER.zip"
 OUTDIR="$WORKDIR/out"
 KSRC="$WORKDIR/ksrc"
@@ -103,7 +103,7 @@ git log --pretty=format:"- [%h](https://${SUSFS_URL#https://}/commit/%H) %s" -5 
 cd ..
 
 if kernel_version_eq "$KERNEL_VERSION" "6.1"; then
-  generate_gh_changelog "ahmed-alnassif/GKI-Duchamp-6.1" "$KERNEL_BRANCH" 10 "$RELEASE_DIR/android_kernel-6.1_changelog.txt"
+  generate_gh_changelog "slymnguner/GKI-Duchamp-6.1" "$KERNEL_BRANCH" 10 "$RELEASE_DIR/android_kernel-6.1_changelog.txt"
 else
   echo "No changelog generator wired up yet for $KERNEL_VERSION" \
     > "$RELEASE_DIR/android_kernel-${KERNEL_VERSION}_changelog.txt"
@@ -201,7 +201,7 @@ fi
 if [ "$NH" = "true" ] && ! kernel_version_eq "$KERNEL_VERSION" "6.1" && [ "$No_DS" = "false" ]; then
   log "Applying NetHunter patches"
   apply_patch_file "$KERNEL_PATCHES/nethunter/0001-mac80211-cfg80211-Add-monitor-mode-and-packet-inject.patch"
-  git clone --depth=1 "https://github.com/ahmed-alnassif/rtw88"
+  git clone --depth=1 "https://github.com/slymnguner/rtw88"
   rm -rf "drivers/net/wireless/realtek/rtw88"
   mv rtw88 "drivers/net/wireless/realtek/"
 
@@ -235,7 +235,7 @@ if [ "$KSU" = "KSUN" ]; then
     apply_susfs_patches
   else
     log "KernelSU Next included (latest tagged release)"
-    curl -fLSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -
+    curl -fLSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/dev/kernel/setup.sh" | bash -
   fi
 fi
 
@@ -260,8 +260,8 @@ if [ "$KSU" = "KSU" ]; then
     apply_patch_file "$PATCHES_DIR/0001-feat-escape-persistent_allow_list-to-kthread.patch"
     apply_patch_file "$PATCHES_DIR/0001-feat-supercalls-allow-userspace-to-pull-list-entries.patch"
     sed -i "/    git pull && echo \"\[+\] Repository updated.\"/d" "kernel/setup.sh"
-    git config --global user.email "mr.ahmed.nassif@gmail.com"
-    git config --global user.name "Ahmed Al-Nassif"
+    git config --global user.email "slymngunermmx@gmail.com"
+    git config --global user.name "slymnguner"
     git add .
     git commit -m "susfs patch"
     cd ..
@@ -499,7 +499,7 @@ git clone -q --depth=1 $ANYKERNEL_REPO anykernel
 
 AK3_ZIP_NAME=${AK3_ZIP_NAME//REL/$RELEASE}
 sed -i \
-  -e "s/kernel.string=.*/kernel.string=${KERNEL_NAME} ${RELEASE} ${LINUX_VERSION} ${VARIANT} by Ahmed Al-Nassif (ahmed-alnassif)/g" \
+  -e "s/kernel.string=.*/kernel.string=${KERNEL_NAME} ${RELEASE} ${LINUX_VERSION} ${VARIANT} by slymnguner/g" \
   -e "s/supported_kernel=\".*\"/supported_kernel=\"${KERNEL_VERSION}\"/g" \
   $WORKDIR/anykernel/anykernel.sh
 

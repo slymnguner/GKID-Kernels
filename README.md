@@ -4,15 +4,14 @@
   <img src="docs/banner.png" alt="GKID Kernels Banner">
 </p>
 
-[![Build Status](https://github.com/ahmed-alnassif/GKID-Kernels/actions/workflows/build.yml/badge.svg)](https://github.com/ahmed-alnassif/GKID-Kernels/actions/workflows/build.yml)
-[![Latest Release](https://img.shields.io/github/v/release/ahmed-alnassif/GKID-Kernels?label=Latest%20Release&color=00aa00)](https://github.com/ahmed-alnassif/GKID-Kernels/releases)
-[![Downloads](https://img.shields.io/github/downloads/ahmed-alnassif/GKID-Kernels/total?label=Downloads&color=00aa00)](https://github.com/ahmed-alnassif/GKID-Kernels/releases)
-[![Group](https://img.shields.io/badge/Telegram-Group-blue.svg?logo=telegram)](https://t.me/ahmed_alnassif_tg)
-[![GitHub License](https://img.shields.io/github/license/ahmed-alnassif/GKID-Kernels?logo=gnu)](/LICENSE)
+[![Build Status](https://github.com/slymnguner/GKID-Kernels/actions/workflows/build.yml/badge.svg)](https://github.com/slymnguner/GKID-Kernels/actions/workflows/build.yml)
+[![Latest Release](https://img.shields.io/github/v/release/slymnguner/GKID-Kernels?label=Latest%20Release&color=00aa00)](https://github.com/slymnguner/GKID-Kernels/releases)
+[![Downloads](https://img.shields.io/github/downloads/slymnguner/GKID-Kernels/total?label=Downloads&color=00aa00)](https://github.com/slymnguner/GKID-Kernels/releases)
+[![GitHub License](https://img.shields.io/github/license/slymnguner/GKID-Kernels?logo=gnu)](/LICENSE)
 [![SuSFS](https://img.shields.io/badge/SuSFS-4CAF50?&logo=gitlab&logoColor=white)](https://gitlab.com/simonpunk/susfs4ksu)
 [![KernelSU](https://img.shields.io/badge/KernelSU-000000?&logo=github&logoColor=white)](https://github.com/tiann/KernelSU)
 [![BakaSU](https://img.shields.io/badge/BakaSU-E91E63?&logo=github&logoColor=white)](https://github.com/Baka-SU/BakaSU)
-[![Managers](https://img.shields.io/badge/Managers-multiple-success)](https://github.com/ahmed-alnassif/GKID-Kernels/releases)
+[![Managers](https://img.shields.io/badge/Managers-multiple-success)](https://github.com/slymnguner/GKID-Kernels/releases)
 
 **⚡ Blazing fast GKI kernel for Android** with KernelSU, SuSFS, NetHunter, NTSync, performance optimizations, battery improvements, and advanced security features.
 
@@ -24,32 +23,11 @@
 
 ---
 
-## ❤️ Support This Project
-
-**Tron (TRC20):** `TK7s2HGGWoLuefoznbVMZdiCpEwSTvZ1CV`
-
-**Bitcoin (BTC):** `bc1qstka58vn66qutzhgaalxfm7jn4d7xmgkze26sk`
-
-**Ethereum (ERC20):** `0xa13F8baaa24b563896a8ddAA3089317d43344C55`
-
-**ShamCash:** `a7da9b01b8faf8e3b3839f1b9f2b8d04`
-
-Your donations keep this project alive! I spend countless hours maintaining kernel builds for 5 different versions, fixing bugs, adding features, and supporting users. **Every donation matters!** 🙏
-
----
-
-## ✨ ReSuSFS 
-
-**[ReSuSFS](https://github.com/ahmed-alnassif/ReSuSFS)** – Root hiding made simple, powerful when you need it. A [KernelSU](https://kernelsu.org) module and WebUI that turns SuSFS into clean config files and toggle switches for everyday use, with **strong hiding applied out of the box** via built-in spoofing and hiding scripts for one-tap protection, plus a script manager for power users who want more, all without leaving the WebUI.
-
----
-
 ## ⚡ Quick Start
 
 1. **Check** your kernel version in Settings → About Phone
-2. **Download** matching variant from [Releases](https://github.com/ahmed-alnassif/GKID-Kernels/releases)
+2. **Download** matching variant from [Releases](https://github.com/slymnguner/GKID-Kernels/releases)
 3. **Flash** using KernelSU app or custom recovery
-4. **Manage** SuSFS with [ReSuSFS](https://github.com/ahmed-alnassif/ReSuSFS)
 
 ---
 
@@ -265,7 +243,7 @@ Separate KernelSU module containing wireless drivers and firmware when built as 
 
 ## 📥 Downloads
 
-**All releases:** [GitHub Releases](https://github.com/ahmed-alnassif/GKID-Kernels/releases)
+**All releases:** [GitHub Releases](https://github.com/slymnguner/GKID-Kernels/releases)
 
 **Each release includes:**
 - 📦 AnyKernel3 flashable packages
@@ -287,24 +265,14 @@ su -c "sysctl -w net.ipv4.tcp_congestion_control=westwood"
 su -c "sysctl -w net.ipv4.tcp_congestion_control=bbr"
 ```
 
-**Make permanent:** Create a script in `/data/adb/service.d/` with the sysctl command or use ReSuSFS.
+**Make permanent:** Create a script in `/data/adb/service.d/` with the sysctl command.
 
 ---
 
-## Other Ways to Help
+## 👤 Maintainer & Credits
 
-- **Star the Repository** ⭐ - Helps others discover this project
-- **Share** 📢 - Spread the word in your community or forums
-- **Report Issues** 🐛 - Found a bug? Open an issue with detailed logs
-- **Contribute** 🔧 - Pull requests, suggestions, and feedback are always welcome
-
----
-
-## 💬 Community
-
-- **Telegram:** [@ahmed_alnassif_tg](https://t.me/ahmed_alnassif_tg)
-- **Discussions:** [GitHub Discussions](https://github.com/ahmed-alnassif/GKID-Kernels/discussions)
-- **Issues:** [GitHub Issues](https://github.com/ahmed-alnassif/GKID-Kernels/issues)
+- Maintained by [slymnguner](https://github.com/slymnguner) - contact: slymngunermmx@gmail.com
+- Based on the GKID-Kernels project by Ahmed Al-Nassif, licensed under GPL-3.0. Original patch authorship is preserved in the `.patch` headers.
 
 ---
 

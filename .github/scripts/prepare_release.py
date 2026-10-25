@@ -166,16 +166,6 @@ def build_release_body():
 
 	body = f"""{warning}### {release_name}
 
-## ❤️ Support This Project
-
-**[Donations](https://github.com/ahmed-alnassif#-support-my-work)**
-
-Your donations keep this project alive! I spend countless hours maintaining kernel builds for 5 different versions, fixing bugs, adding features, and supporting users. **Every donation matters!** 🙏
-
-- **[ReSuSFS](https://github.com/ahmed-alnassif/ReSuSFS)** – Root hiding made simple, powerful when you need it. A [KernelSU](https://kernelsu.org) module and WebUI that turns SuSFS into clean config files and toggle switches for everyday use, with **strong hiding applied out of the box** via built-in spoofing and hiding scripts for one-tap protection, plus a script manager for power users who want more, all without leaving the WebUI.
-
-- **Community:** join the discussion and get support on [Telegram](https://t.me/ahmed_alnassif_tg).
-
 **Run settings:**
 - LTO optimizations: {cap_first(inputs['lto']) or 'Unknown'}
 - Kali NetHunter: {status_map.get(inputs['nh'], 'Disabled')}
@@ -202,7 +192,7 @@ Your donations keep this project alive! I spend countless hours maintaining kern
 | Compat+KernelSU-Next | ✅ | ❌ | ❌ | ✅ |
 | Compat+KernelSU-Next+SuSFS | ✅ | ✅ | ❌ | ✅ |
 
-**Not sure? Use a `Compat` variant first**: it fixes most boot issues. Full feature breakdown, LTO explanation, and troubleshooting live in the [README](https://github.com/ahmed-alnassif/GKID-Kernels#-build-variants).
+**Not sure? Use a `Compat` variant first**: it fixes most boot issues. Full feature breakdown, LTO explanation, and troubleshooting live in the [README](https://github.com/{repo}#-build-variants).
 
 ## Contents
 {toc_block}
@@ -215,14 +205,12 @@ Your donations keep this project alive! I spend countless hours maintaining kern
 
 >[!Note]
 >- **Bootloop?** Flash a **Compat** variant first.
->- **Issues?** Check [Discussions](https://github.com/ahmed-alnassif/GKID-Kernels/discussions) before opening an issue.
 
 ---
 
-### Community & Support
-- **Have questions?** Start a [Discussion](https://github.com/ahmed-alnassif/GKID-Kernels/discussions)
-- **Found a bug?** Open an [Issue](https://github.com/ahmed-alnassif/GKID-Kernels/issues) with logs
-- **Enjoying the kernel?** Star the [repo](https://github.com/ahmed-alnassif/GKID-Kernels)
+### Contact
+- **E-mail:** slymngunermmx@gmail.com
+- **Maintainer:** [slymnguner](https://github.com/slymnguner)
 
 ---
 
@@ -261,9 +249,9 @@ Enhance your Poco X6 Pro with these modules designed for GKID kernels:
 
 | Module | Description | ROM |
 |--------|-------------|-----|
-| [**GPU Unlocker**](https://github.com/ahmed-alnassif/GPU-Unlocker) | Unlock Mali-G615 MC6 from 701MHz to 1.4GHz (100% boost) | HyperOS |
-| [**Thermal Manager**](https://github.com/ahmed-alnassif/Thermal-Manager) | Fix thermal mode reset. Force-persist Balanced, Battery Saver, Performance, or Gaming. Includes WebUI. | AOSP |
-| [**DSP AudioFix**](https://github.com/ahmed-alnassif/DSP-AudioFix) | Fix distorted audio on devices with Awinic smart amps | AOSP |
+| [**GPU Unlocker**](https://github.com/slymnguner/GPU-Unlocker) | Unlock Mali-G615 MC6 from 701MHz to 1.4GHz (100% boost) | HyperOS |
+| [**Thermal Manager**](https://github.com/slymnguner/Thermal-Manager) | Fix thermal mode reset. Force-persist Balanced, Battery Saver, Performance, or Gaming. Includes WebUI. | AOSP |
+| [**DSP AudioFix**](https://github.com/slymnguner/DSP-AudioFix) | Fix distorted audio on devices with Awinic smart amps | AOSP |
 
 > [!Tip]
 > HyperOS users: GPU Unlocker gives a large gaming performance boost.
