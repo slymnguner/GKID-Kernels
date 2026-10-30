@@ -61,7 +61,7 @@ on:
       NH:
         description: "Enable NetHunter support"
         type: boolean
-        default: true
+        default: false
 
       NM:
         description: "Enable NoMount support"
@@ -167,7 +167,7 @@ jobs:
           ./build.sh
 
       - name: Create KernelSU module for wireless modules
-        if: ${{ inputs.NH }}
+        if: ${{ inputs.NH && matrix.No_DS != 'true' }}
         run: |
           echo "Extracting wireless modules..."
           NAME="WirelessKSU"
@@ -305,7 +305,7 @@ jobs:
       - name: Load environment from builds and prepare release body
         env:
           TEST_INPUT: ${{ inputs.TEST }}
-          DROIDSPACES_INPUT: ${{ inputs.DroidSpaces }}
+          DROIDSPACES_INPUT: ${{ inputs.DROIDSPACES }}
           NH_INPUT: ${{ inputs.NH }}
           NM_INPUT: ${{ inputs.NM }}
           LTO_INPUT: ${{ inputs.LTO }}

@@ -28,6 +28,14 @@ PATCHES_DIR="$WORKDIR/patches"
 
 source $WORKDIR/functions.sh
 
+# --- Feature normalization: No_DS overrides NH and DROIDSPACES before
+#     any downstream logic (kernel branch selection, patches) runs. ---
+if [ "$No_DS" = "true" ]; then
+  NH="false"
+  DROIDSPACES="false"
+fi
+# ----------------------------------------------------------------------
+
 if kernel_version_eq "$KERNEL_VERSION" "6.1"; then
   if [ "$NH" = "true" ]; then
     KERNEL_BRANCH="GKID-NH"
@@ -173,10 +181,7 @@ log "BBG included"
 wget -qO- "https://github.com/vc-teahouse/Baseband-guard/raw/main/setup.sh" | bash
 sed -i '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ { /baseband_guard/! s/selinux/selinux,baseband_guard/ } }' "security/Kconfig"
 
-if [ "$KSU" = "no" ] || [ "$KSU" = "vnlto" ] || [ "$No_DS" = "true" ]; then
-  export DROIDSPACES="false"
-  export NH="false"
-  warning "DroidSpaces/NetHunter doesn't supported in this builds"
+if [ "$No_DS" = "true" ]; then
   VARIANT+="+NoDS"
 fi
 
