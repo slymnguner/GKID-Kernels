@@ -209,15 +209,6 @@ if [ "$NH" = "true" ] && ! kernel_version_eq "$KERNEL_VERSION" "6.1" && [ "$No_D
 fi
 
 set -eo pipefail
-if susfs_included && [ "$KSU" = "BSU" ]; then
-  log "BakaSU included"
-  install_ksu "Baka-SU/BakaSU" "main"
-
-  clone_susfs
-  apply_susfs_patches
-
-fi
-
 if [ "$KSU" = "KSUN" ]; then
   if susfs_included; then
     log "KernelSU Next + SuSFS included (pershoot dev-susfs)"
@@ -237,46 +228,8 @@ if [ "$KSU" = "KSUN" ]; then
   fi
 fi
 
-if [ "$KSU" = "KSU" ]; then
-  log "KernelSU included"
-  if ! susfs_included; then
-    install_ksu "tiann/KernelSU" "main"
-  fi
-
-  if susfs_included; then
-    VARIANT+="+Multiple-Managers"
-    git clone "https://github.com/tiann/KernelSU" && echo "[+] Repository cloned."
-    clone_susfs
-
-    cd KernelSU
-    #git reset --hard "61c6313"
-    git reset --soft HEAD~1
-    apply_patch_file "$PATCHES_DIR/0001-feat-avc-log-spoofing.patch"
-    apply_patch_file "$PATCHES_DIR/0001-feat-add-multiple-managers.patch"
-    #apply_patch_file "$PATCHES_DIR/0001-feat-throne_tracker-offload-to-kthread.patch"
-    apply_patch_file "$SUSFS_PATCHES/KernelSU/10_enable_susfs_for_ksu.patch"
-    apply_patch_file "$PATCHES_DIR/0001-feat-escape-persistent_allow_list-to-kthread.patch"
-    apply_patch_file "$PATCHES_DIR/0001-feat-supercalls-allow-userspace-to-pull-list-entries.patch"
-    sed -i "/    git pull && echo \"\[+\] Repository updated.\"/d" "kernel/setup.sh"
-    git config --global user.email "slymngunermmx@gmail.com"
-    git config --global user.name "slymnguner"
-    git add .
-    git commit -m "susfs patch"
-    cd ..
-    bash "KernelSU/kernel/setup.sh" "main"
-
-    apply_susfs_patches
-
-  fi
-
-fi
-
 if [ "$KSU_COMPAT" = "true" ]; then
-  if [ "$C_LTO" = "true" ]; then
-    VARIANT="Compat+${VARIANT}"
-  else
-    VARIANT="Compat+NoLTO+${VARIANT}"
-  fi
+  VARIANT="Compat+NoLTO+${VARIANT}"
 fi
 
 echo "VARIANT=$VARIANT" >> $GITHUB_ENV

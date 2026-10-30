@@ -31,18 +31,6 @@ on:
           - "thinLTO"
           - "fullLTO"
 
-      KERNEL_VERSION:
-        description: "GKI LTS kernel line to build"
-        default: "6.1"
-        type: choice
-        options:
-          - "6.1"
-
-      BUILD_KSUN:
-        description: "Build with KernelSU Next"
-        type: boolean
-        default: true
-
       PRERELEASE:
         description: "Publish as pre-release (uncheck for a normal release)"
         type: boolean
@@ -109,8 +97,8 @@ jobs:
       - name: Generate build matrix
         id: set-matrix
         env:
-          KERNEL_VERSION: ${{ github.event.inputs.KERNEL_VERSION }}
-          BUILD_KSUN: ${{ github.event.inputs.BUILD_KSUN }}
+          KERNEL_VERSION: "6.1"
+          BUILD_KSUN: "true"
         run: |
           python3 py/generate-matrix.py >> "$GITHUB_OUTPUT"
 
