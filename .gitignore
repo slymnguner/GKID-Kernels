@@ -1,1 +1,3 @@
 *.before-fix
+__pycache__/
+*.pyc

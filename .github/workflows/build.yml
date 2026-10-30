@@ -138,7 +138,6 @@ jobs:
           KSU: ${{ matrix.KSU }}
           KSU_COMPAT: ${{ matrix.KSU_COMPAT }}
           KSU_SUSFS: ${{ matrix.KSU_SUSFS }}
-          C_LTO: ${{ matrix.C_LTO }}
           No_DS: ${{ matrix.No_DS }}
           TODO: ${{ inputs.TODO }}
           TEST: ${{ inputs.TEST }}

@@ -12,7 +12,6 @@ DEFAULT = {
 	"KSU": "Dummy",
 	"KSU_COMPAT": "false",
 	"KSU_SUSFS": "false",
-	"C_LTO": "false",
 	"No_DS": "false"
 }
 
