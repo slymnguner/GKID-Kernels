@@ -33,35 +33,15 @@ on:
 
       KERNEL_VERSION:
         description: "GKI LTS kernel line to build"
-        default: "All"
+        default: "6.1"
         type: choice
         options:
-          - "All"
-          - "5.10"
-          - "5.15"
           - "6.1"
-          - "6.6"
-          - "6.12"
-
-      BUILD_VANILLA:
-        description: "Build Vanilla (no KSU)"
-        type: boolean
-        default: true
-
-      BUILD_KSU:
-        description: "Build with KernelSU"
-        type: boolean
-        default: true
-
-      BUILD_KSU_SUSFS:
-        description: "Build with KernelSU and its forks + SUSFS"
-        type: boolean
-        default: true
 
       BUILD_KSUN:
         description: "Build with KernelSU Next"
         type: boolean
-        default: false
+        default: true
 
       PRERELEASE:
         description: "Publish as pre-release (uncheck for a normal release)"
@@ -130,9 +110,6 @@ jobs:
         id: set-matrix
         env:
           KERNEL_VERSION: ${{ github.event.inputs.KERNEL_VERSION }}
-          BUILD_VANILLA: ${{ github.event.inputs.BUILD_VANILLA }}
-          BUILD_KSU: ${{ github.event.inputs.BUILD_KSU }}
-          BUILD_KSU_SUSFS: ${{ github.event.inputs.BUILD_KSU_SUSFS }}
           BUILD_KSUN: ${{ github.event.inputs.BUILD_KSUN }}
         run: |
           python3 py/generate-matrix.py >> "$GITHUB_OUTPUT"

@@ -24,21 +24,6 @@ def config(**overrides) -> Dict[str, Any]:
 
 # Build configurations
 BUILD_CONFIGS: Dict[str, List[Dict[str, Any]]] = {
-	"BUILD_VANILLA": [
-		config(name="Vanilla", KSU="no"),
-		config(name="Vanilla+NoLTO", KSU="vnlto")
-	],
-	"BUILD_KSU": [
-		config(name="KSU", KSU="KSU")
-	],
-	"BUILD_KSU_SUSFS": [
-		config(name="KSU+SUSFS", KSU="KSU", KSU_SUSFS="true"),
-		config(name="Compat+KSU+SUSFS", KSU="KSU", KSU_COMPAT="true", KSU_SUSFS="true"),
-		config(name="BSU+SUSFS", KSU="BSU", KSU_SUSFS="true"),
-		config(name="Compat+BSU+SUSFS", KSU="BSU", KSU_COMPAT="true", KSU_SUSFS="true"),
-		config(name="Compat+NoDS+KSU+SUSFS", KSU="KSU", KSU_COMPAT="true", KSU_SUSFS="true", No_DS="true"),
-		config(name="Compat+NoDS+BSU+SUSFS", KSU="BSU", KSU_COMPAT="true", KSU_SUSFS="true", No_DS="true"),
-	],
 	"BUILD_KSUN": [
 		config(name="KSUN", KSU="KSUN"),
 		config(name="KSUN+SUSFS", KSU="KSUN", KSU_SUSFS="true"),
@@ -49,7 +34,7 @@ BUILD_CONFIGS: Dict[str, List[Dict[str, Any]]] = {
 	]
 }
 
-ALL_KERNEL_VERSIONS: List[str] = ["5.10", "5.15", "6.1", "6.6", "6.12"]
+ALL_KERNEL_VERSIONS: List[str] = ["6.1"]
 
 def get_env_bool(var_name: str, default: bool = False) -> bool:
 	"""Read environment variable as boolean."""

@@ -10,10 +10,10 @@
 [![GitHub License](https://img.shields.io/github/license/slymnguner/GKID-Kernels?logo=gnu)](/LICENSE)
 [![SuSFS](https://img.shields.io/badge/SuSFS-4CAF50?&logo=gitlab&logoColor=white)](https://gitlab.com/simonpunk/susfs4ksu)
 [![KernelSU](https://img.shields.io/badge/KernelSU-000000?&logo=github&logoColor=white)](https://github.com/tiann/KernelSU)
-[![BakaSU](https://img.shields.io/badge/BakaSU-E91E63?&logo=github&logoColor=white)](https://github.com/Baka-SU/BakaSU)
+[![KernelSU-Next](https://img.shields.io/badge/KernelSU--Next-E91E63?&logo=github&logoColor=white)](https://github.com/KernelSU-Next/KernelSU-Next)
 [![Managers](https://img.shields.io/badge/Managers-multiple-success)](https://github.com/slymnguner/GKID-Kernels/releases)
 
-**⚡ Blazing fast GKI kernel for Android** with KernelSU, SuSFS, NetHunter, NTSync, performance optimizations, battery improvements, and advanced security features.
+**⚡ Blazing fast GKI kernel for Android** with KernelSU-Next (KSUN), SuSFS, NetHunter, NTSync, performance optimizations, battery improvements, and advanced security features.
 
 ---
 
@@ -35,30 +35,20 @@
 
 | Linux | Android |
 |-------|---------|
-| 5.10  | 12      |
-| 5.15  | 13      |
 | 6.1   | 14      |
-| 6.6   | 15      |
-| 6.12  | 16      |
 
 ---
 
 ## 🔧 Build Variants
 
-| Variant | Root | SuSFS | LTO | Compat |
-|---------|------|-------|-----|--------|
-| Vanilla | ❌ | ❌ | Full | ❌ |
-| Vanilla+NoLTO | ❌ | ❌ | ❌ | ❌ |
-| KernelSU | ✅ | ❌ | Full | ❌ |
-| KernelSU+SuSFS | ✅ | ✅ | Full | ❌ |
-| KSU+SuSFS+MM | ✅ | ✅ | Full | ❌ |
-| BakaSU+SuSFS | ✅ | ✅ | Full | ❌ |
-| KernelSU-Next | ✅ | ❌ | Full | ❌ |
-| KernelSU-Next+SuSFS | ✅ | ✅ | Full | ❌ |
-| Compat+KSU+SuSFS | ✅ | ✅ | ❌ | ✅ |
-| Compat+BakaSU+SuSFS | ✅ | ✅ | ❌ | ✅ |
-| Compat+KernelSU-Next | ✅ | ❌ | ❌ | ✅ |
-| Compat+KernelSU-Next+SuSFS | ✅ | ✅ | ❌ | ✅ |
+| Variant | Root | SuSFS | LTO | Compat | NoDS |
+|---------|------|-------|-----|--------|------|
+| KSUN | ✅ | ❌ | Full | ❌ | ❌ |
+| KSUN+SuSFS | ✅ | ✅ | Full | ❌ | ❌ |
+| Compat+KSUN | ✅ | ❌ | ❌ | ✅ | ❌ |
+| Compat+KSUN+SuSFS | ✅ | ✅ | ❌ | ✅ | ❌ |
+| Compat+NoDS+KSUN | ✅ | ❌ | ❌ | ✅ | ✅ |
+| Compat+NoDS+KSUN+SuSFS | ✅ | ✅ | ❌ | ✅ | ✅ |
 
 **Optional features** (enable on any variant):
 - 🐳 DroidSpaces - Linux userspace support
@@ -155,8 +145,7 @@
 
 | Feature | Description |
 |---------|-------------|
-| **KernelSU** | Stable kernel-based root with excellent hiding |
-| **BakaSU** | BakaSU kernel integration |
+| **KernelSU-Next (KSUN)** | Next-gen kernel-based root with excellent hiding |
 | **Multiple Managers** | Run multiple KernelSU managers simultaneously |
 | **Vanilla** | No root for banking and corporate apps |
 
