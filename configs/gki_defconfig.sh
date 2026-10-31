@@ -4,7 +4,11 @@
 DEFCONFIG="arch/arm64/configs/gki_defconfig"
 
 function apply_config(){
-  cat "$1" >> "$2"
+  if [ ! -f "$1" ]; then
+    echo "⚠  missing config file: $1 (skipped)" >&2
+    return 0
+  fi
+  cat "$1" >> "$2" || { echo "FATAL: failed to append $1 to $2" >&2; return 1; }
 }
 
 if [ "$KSU" != "no" ]; then

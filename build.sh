@@ -17,7 +17,7 @@ sudo timedatectl set-timezone "$TIMEZONE" || export TZ="$TIMEZONE"
 
 RELEASE="$(date +v%y.%m.%d)${RUN_NUM}"
 
-mkdir -p $RELEASE_DIR
+mkdir -p "$RELEASE_DIR" || { echo "FATAL: mkdir $RELEASE_DIR failed" >&2; exit 1; }
 
 GKI_RELEASES_REPO="https://github.com/${GITHUB_REPOSITORY:-slymnguner/GKID-Kernels}"
 AK3_ZIP_NAME="$KERNEL_NAME-VARIANT-REL-KVER.zip"
@@ -26,7 +26,8 @@ KSRC="$WORKDIR/ksrc"
 KERNEL_PATCHES="$WORKDIR/kernel-patches"
 PATCHES_DIR="$WORKDIR/patches"
 
-source $WORKDIR/functions.sh
+[ -f "$WORKDIR/functions.sh" ] || { echo "FATAL: functions.sh missing at $WORKDIR" >&2; exit 1; }
+source "$WORKDIR/functions.sh"
 
 # --- Feature normalization: No_DS overrides NH and DROIDSPACES before
 #     any downstream logic (kernel branch selection, patches) runs. ---
@@ -69,7 +70,7 @@ else
   git clone -q --depth=1 "$KERNEL_REPO" -b "$KERNEL_BRANCH" "$KSRC" || { error "kernel clone failed: $KERNEL_REPO ($KERNEL_BRANCH)"; exit 1; }
 fi
 
-cd $KSRC
+cd "$KSRC" || { error "cd $KSRC failed"; exit 1; }
 LINUX_VERSION=$(make kernelversion) || { error "make kernelversion failed"; exit 1; }
 [ -n "$LINUX_VERSION" ] || { error "empty LINUX_VERSION"; exit 1; }
 DEFCONFIG_FILE=$(find ./arch/arm64/configs -name "$KERNEL_DEFCONFIG" -print -quit)
@@ -136,7 +137,7 @@ ccache --set-config=compiler_check=content
 COMPILER_STRING=$(clang -v 2>&1 | head -n 1 | sed 's/(https..*//' | sed 's/ version//')
 echo "COMPILER_STRING=$COMPILER_STRING" >> "${GITHUB_ENV:-/dev/null}"
 
-cd $KSRC
+cd "$KSRC" || { error "cd $KSRC failed"; exit 1; }
 
 echo "::group::[+] pahole installation"
 build_and_install_pahole || { error "pahole install failed"; exit 1; }
@@ -228,8 +229,8 @@ source "$WORKDIR/configs/gki_defconfig.sh" || { error "sourcing gki_defconfig.sh
 if [ "${TODO:-kernel}" = "kernel" ]; then
   LATEST_COMMIT_HASH=$(git rev-parse --short HEAD 2>/dev/null) || { error "git rev-parse failed in $KSRC"; exit 1; }
   SUFFIX="${RUN_NUM}-${LATEST_COMMIT_HASH}"
-  config --set-str CONFIG_LOCALVERSION "-${KERNEL_NAME}${SUFFIX}"
-  config --disable CONFIG_LOCALVERSION_AUTO
+  config --set-str CONFIG_LOCALVERSION "-${KERNEL_NAME}${SUFFIX}" || { error "config set-str CONFIG_LOCALVERSION failed"; exit 1; }
+  config --disable CONFIG_LOCALVERSION_AUTO || { error "config disable CONFIG_LOCALVERSION_AUTO failed"; exit 1; }
   if [ -f scripts/setlocalversion ]; then
     sed -i 's/echo "+"/# echo "+"/g' scripts/setlocalversion || warning "setlocalversion sed failed (non-fatal)"
   else
