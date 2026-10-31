@@ -7,6 +7,8 @@ from typing import Dict, List, Any
 from copy import deepcopy
 
 # Default template
+VALID_KSU = {"KSUN"}
+
 DEFAULT = {
 	"name": "Dummy",
 	"KSU": "Dummy",
@@ -19,6 +21,11 @@ def config(**overrides) -> Dict[str, Any]:
 	"""Create config from default with overrides."""
 	cfg = deepcopy(DEFAULT)
 	cfg.update(overrides)
+	if cfg["KSU"] not in VALID_KSU:
+		raise ValueError(
+			f"Unknown KSU='{cfg['KSU']}' in config '{cfg['name']}'. "
+			f"Expected one of: {', '.join(sorted(VALID_KSU))}"
+		)
 	return cfg
 
 # Build configurations
@@ -62,6 +69,15 @@ def generate_matrix() -> Dict[str, List[Dict[str, Any]]]:
 	for env_var, configs in BUILD_CONFIGS.items():
 		if get_env_bool(env_var):
 			variant_entries.extend(configs)
+
+			# Warn on unknown BUILD_* flags that are set to true
+			for env_name in os.environ:
+				if env_name.startswith("BUILD_") and env_name not in BUILD_CONFIGS:
+					if get_env_bool(env_name):
+						print(
+							f"::warning::Unknown build flag {env_name}=true (ignored)",
+							file=sys.stderr,
+						)
 
 	if not variant_entries:
 		raise ValueError(
