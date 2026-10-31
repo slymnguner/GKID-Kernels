@@ -261,7 +261,7 @@ export KBUILD_BUILD_TIMESTAMP=$(git -C $KSRC log -1 --format=%cd --date=format-l
 export KCFLAGS="-w"
 
 LINK_CACHE_PATH="/dev/shm/thinlto-cache"
-LINKER_SHIM="/tmp/clang-lto-linker"
+LINKER_SHIM="$WORKDIR/.shims/clang-lto-linker"
 MAKE_ARGS=(
   LLVM=1
   LLVM_IAS=1
@@ -280,6 +280,7 @@ fi
 if [ "${LTO:-}" = "thinLTO" ]; then
     log "ThinLTO cache enabled"
     mkdir -p "$LINK_CACHE_PATH"
+    mkdir -p "$(dirname "$LINKER_SHIM")"
     cat > "$LINKER_SHIM" << SHIM
 #!/usr/bin/env bash
 JOBCOUNT=\$(( \$(nproc --all) / 2 ))

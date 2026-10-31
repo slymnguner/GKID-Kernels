@@ -11,6 +11,7 @@ declare -A ANDROID_RELEASE_FOR_KVER=(
 declare -A GKI_BRANCH=(
   ["5.10"]="android12-5.10"
   ["5.15"]="android13-5.15"
+  ["6.1"]="android14-6.1"
   ["6.6"]="android15-6.6"
   ["6.12"]="android16-6.12"
 )
@@ -18,6 +19,7 @@ declare -A GKI_BRANCH=(
 declare -A GKI_AOSP_BRANCH=(
   ["5.10"]="android12-5.10-lts"
   ["5.15"]="android13-5.15-lts"
+  ["6.1"]="android14-6.1-lts"
   ["6.6"]="android15-6.6-lts"
   ["6.12"]="android16-6.12-lts"
 )
@@ -141,7 +143,7 @@ susfs_included() {
 
 simplify_gh_url() {
   local URL="$1"
-  echo "$URL" | sed "s|https://github.com/||g" | sed "s|.git||g"
+  echo "$URL" | sed "s|https://github.com/||g" | sed "s|\.git$||"
 }
 
 config() {
@@ -531,6 +533,9 @@ apply_susfs_patches() {
     if ! patch -p1 --fuzz=3 < "$SUSFS_PATCHES/50_add_susfs_in_${SUSFS_PATCH}.patch"; then
         if [ "$KERNEL_KMI" = "android13-5.15" ]; then
             fix_namespace_susfs_mount
+        else
+            error "SuSFS core patch failed: 50_add_susfs_in_${SUSFS_PATCH}.patch (KERNEL_KMI=${KERNEL_KMI:-unset})"
+            return 1
         fi
     fi
 

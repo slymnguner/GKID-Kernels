@@ -1,3 +1,6 @@
 *.before-fix
 __pycache__/
 *.pyc
+.shims/
+*.bak-tur1
+*.bak-tur*
