@@ -274,6 +274,7 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v7.0.1
         with:
+          ref: ${{ github.sha }}
           fetch-depth: 1
 
       - name: Download all artifacts
@@ -302,6 +303,7 @@ jobs:
         with:
           name: ${{ env.RELEASE_NAME }}
           tag_name: ${{ env.RELEASE }}
+          target_commitish: ${{ github.sha }}
           prerelease: ${{ inputs.PRERELEASE }}
           files: |
             release-artifacts/*.zip
