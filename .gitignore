@@ -5,3 +5,7 @@ __pycache__/
 *.bak-*
 *.before-*
 artifacts/
+GKI-Duchamp-6.1/
+*.bak*
+configs/*.bak*
+functions.sh.bak*

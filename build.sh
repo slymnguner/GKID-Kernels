@@ -163,19 +163,6 @@ else
   success "Applied $_common_count common patch(es)"
 fi
 
-log "Applying common patches from $KERNEL_PATCHES/common"
-_common_count=0
-shopt -s nullglob
-for _patch in "$KERNEL_PATCHES"/common/*.patch; do
-  apply_patch_file "$_patch" || { error "common patch failed: $_patch"; exit 1; }
-  _common_count=$((_common_count + 1))
-done
-shopt -u nullglob
-if [ "$_common_count" -eq 0 ]; then
-  warning "no common patches found under $KERNEL_PATCHES/common"
-else
-  success "Applied $_common_count common patch(es)"
-fi
 
 
 if kernel_version_lt "$KERNEL_VERSION" "6.12"; then
