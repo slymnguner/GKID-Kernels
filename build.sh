@@ -37,6 +37,7 @@ fi
 # ----------------------------------------------------------------------
 
 if kernel_version_eq "$KERNEL_VERSION" "6.1"; then
+  KERNEL_REPO="${KERNEL_REPO:-https://github.com/slymnguner/GKI-Duchamp-6.1}"
   if [ "$NH" = "true" ]; then
     KERNEL_BRANCH="GKID-NH"
   else
@@ -462,7 +463,8 @@ if [ ! -f "$KERNEL_IMAGE" ];then
   exit 1
 fi
 cp "$KERNEL_IMAGE" .
-zip -r9 "$WORKDIR/$AK3_ZIP_NAME" ./*
+zip -r9 "$WORKDIR/$AK3_ZIP_NAME" ./* || { error "zip failed: $WORKDIR/$AK3_ZIP_NAME"; exit 1; }
+[ -f "$WORKDIR/$AK3_ZIP_NAME" ] || { error "zip produced no output: $WORKDIR/$AK3_ZIP_NAME"; exit 1; }
 cd $OLDPWD
 
 echo "BASE_NAME=$KERNEL_NAME-$VARIANT" >> $GITHUB_ENV

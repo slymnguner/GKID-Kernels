@@ -147,7 +147,7 @@ simplify_gh_url() {
 }
 
 config() {
-  $KSRC/scripts/config --file $DEFCONFIG_FILE $@
+  $KSRC/scripts/config --file $DEFCONFIG_FILE "$@"
 }
 
 log() {
@@ -564,7 +564,7 @@ clone_susfs() {
     fi
 
     if [ -n "$pin" ]; then
-        git -C "$SUSFS_DIR" fetch -q origin "$pin" 2>/dev/null || true
+        git -C "$SUSFS_DIR" fetch -q origin "$pin" 2>/dev/null || warning "pin fetch failed for $pin (may already be local)"
         if ! git -C "$SUSFS_DIR" checkout -q "$pin"; then
             error "Failed to checkout pinned commit $pin for KERNEL_VERSION=$KERNEL_VERSION on branch $SUSFS_BRANCH"
             exit 1

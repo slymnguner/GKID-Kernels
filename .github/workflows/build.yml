@@ -103,7 +103,7 @@ jobs:
           python3 py/generate-matrix.py >> "$GITHUB_OUTPUT"
 
   build:
-    needs: prepare
+    needs: [prepare, ensure-cache-release]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -122,7 +122,7 @@ jobs:
           pip install lxml
 
       - name: Restore ccache from release
-        if: github.event.inputs.TEST == 'no' && github.event.inputs.TODO != 'defconfig'
+        if: inputs.TEST == 'no' && inputs.TODO != 'defconfig'
         id: restore-ccache
         uses: ./.github/actions/ccache-restore
         with:
@@ -191,7 +191,7 @@ jobs:
           ccache --show-stats
 
       - name: Save ccache to release
-        if: always() && github.event.inputs.TEST == 'no' && github.event.inputs.TODO != 'defconfig'
+        if: always() && inputs.TEST == 'no' && inputs.TODO != 'defconfig'
         uses: ./.github/actions/ccache-save
         with:
           repo: ${{ github.repository }}
@@ -269,7 +269,7 @@ jobs:
 
   release:
     needs: build
-    if: always() && github.event.inputs.TODO != 'defconfig'
+    if: always() && inputs.TODO != 'defconfig'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source
