@@ -93,11 +93,17 @@ SUSFS_BRANCH="gki-android14-6.1"
 SUSFS_PATCH="gki-android14-6.1"
 
 log "Changelog of repos"
-clone_susfs 5 || { error "susfs clone for changelog failed"; exit 1; }
-cd "$SUSFS_DIR" || { error "cd $SUSFS_DIR failed"; exit 1; }
-git log --pretty=format:"- [%h](https://${SUSFS_URL#https://}/commit/%H) %s" -5 "$SUSFS_BRANCH" \
-> "$RELEASE_DIR/susfs_changelog-${KERNEL_VERSION}.txt" || { warning "susfs changelog write failed"; }
-cd "$WORKDIR" || { error "cd $WORKDIR failed (post-changelog)"; exit 1; }
+if clone_susfs 5; then
+  cd "$SUSFS_DIR" || { error "cd $SUSFS_DIR failed"; exit 1; }
+  git log --pretty=format:"- [%h](https://${SUSFS_URL#https://}/commit/%H) %s" -5 "$SUSFS_BRANCH" \
+  > "$RELEASE_DIR/susfs_changelog-${KERNEL_VERSION}.txt" || { warning "susfs changelog write failed"; }
+  cd "$WORKDIR" || { error "cd $WORKDIR failed (post-changelog)"; exit 1; }
+elif susfs_included; then
+  error "susfs clone failed"; exit 1
+else
+  warning "susfs clone failed (non-fatal, SuSFS not used)"
+  echo "(changelog unavailable)" > "$RELEASE_DIR/susfs_changelog-${KERNEL_VERSION}.txt"
+fi
 
 generate_gh_changelog "slymnguner/GKI-Duchamp-6.1" "$KERNEL_BRANCH" 10 "$RELEASE_DIR/android_kernel-6.1_changelog.txt"
 generate_gh_changelog "maxsteeel/nomount" "master" 5 "$RELEASE_DIR/nomount_changelog.txt"
