@@ -8,14 +8,6 @@ declare -A ANDROID_RELEASE_FOR_KVER=(
   ["6.12"]="16"
 )
 
-declare -A GKI_SUSFS_BRANCH=(
-  ["5.10"]="gki-android12-5.10"
-  ["5.15"]="gki-android13-5.15"
-  ["6.1"]="gki-android14-6.1"
-  ["6.6"]="gki-android15-6.6"
-  ["6.12"]="gki-android16-6.12"
-)
-
 declare -A GKI_SUSFS_COMMIT=(
 #  ["6.1"]="153f88df3be2501d2d33364f8fe05247aecb3cef"
 #  ["6.6"]="3f0b811b2e105afd8dc858cd71389090e01f404b"
@@ -24,18 +16,6 @@ declare -A GKI_SUSFS_COMMIT=(
 
 android_release_for_version() {
   echo "${ANDROID_RELEASE_FOR_KVER[$1]:-unknown}"
-}
-
-resolve_susfs_branch() {
-  local ver="$1"
-  local branch="${GKI_SUSFS_BRANCH[$ver]:-}"
-
-  if [ -z "$branch" ]; then
-    error "No susfs4ksu branch mapped for KERNEL_VERSION='$ver'"
-    exit 1
-  fi
-
-  echo "$branch"
 }
 
 kernel_version_lt() {

@@ -87,13 +87,8 @@ SUSFS_URL="https://gitlab.com/simonpunk/susfs4ksu"
 SUSFS_DIR="$WORKDIR/susfs"
 SUSFS_PATCHES="${SUSFS_DIR}/kernel_patches"
 
-if kernel_version_eq "$KERNEL_VERSION" "6.1"; then
-  SUSFS_BRANCH="gki-android14-6.1"
-  SUSFS_PATCH="gki-android14-6.1"
-else
-  SUSFS_BRANCH="$(resolve_susfs_branch "$KERNEL_VERSION")"
-  SUSFS_PATCH="$SUSFS_BRANCH"
-fi
+SUSFS_BRANCH="gki-android14-6.1"
+SUSFS_PATCH="gki-android14-6.1"
 
 log "Changelog of repos"
 clone_susfs 5
