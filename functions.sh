@@ -141,6 +141,7 @@ git() {
 }
 
 export -f retry curl git wget bash
+export -f error log info success warning
 
 generate_gh_changelog() {
     local repo="$1"
