@@ -81,8 +81,8 @@ retry() {
             return 0
         fi
 
-        error "Command failed (attempt $attempt/$max_attempts): $*"
-        log "Retrying in ${delay}s..."
+        error "Command failed (attempt $attempt/$max_attempts): $*" >&2
+        log "Retrying in ${delay}s..." >&2
         sleep $delay
         delay=$((delay + 1))
         attempt=$((attempt + 1))
@@ -93,25 +93,14 @@ retry() {
 }
 
 curl() {
-    command -v curl >/dev/null || { error "curl not installed"; return 127; }
+    type -P curl >/dev/null || { error "curl not installed"; return 127; }
     retry command curl "$@"
 }
 wget() {
-    command -v wget >/dev/null || { error "wget not installed"; return 127; }
+    type -P wget >/dev/null || { error "wget not installed"; return 127; }
     retry command wget "$@"
 }
 
-bash() {
-    case "$*" in
-
-        *curl*|*wget*|*git*clone*|*git*fetch*|*git*pull*|*git*push*|*git*ls-remote*|*git*submodule*)
-            retry command bash "$@"
-            ;;
-        *)
-            command bash "$@"
-            ;;
-    esac
-}
 
 git() {
     local args=("$@")
@@ -140,7 +129,7 @@ git() {
     esac
 }
 
-export -f retry curl git wget bash
+export -f retry curl git wget
 export -f error log info success warning
 
 generate_gh_changelog() {

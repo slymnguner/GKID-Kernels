@@ -76,7 +76,7 @@ LINUX_VERSION=$(make kernelversion) || { error "make kernelversion failed"; exit
 DEFCONFIG_FILE=$(find ./arch/arm64/configs -name "$KERNEL_DEFCONFIG" -print -quit)
 [ -n "$DEFCONFIG_FILE" ] || { error "defconfig '$KERNEL_DEFCONFIG' not found under arch/arm64/configs"; exit 1; }
 echo "LINUX_VERSION=$LINUX_VERSION" >> "${GITHUB_ENV:-/dev/null}"
-cd "$WORKDIR" || { error "cd \$WORKDIR failed"; exit 1; }
+cd "$WORKDIR" || { error "cd $WORKDIR failed"; exit 1; }
 
 log "Setting Kernel variant"
 case "$KSU" in
@@ -110,7 +110,7 @@ cd "$WORKDIR/neutron-clang" || { error "cd neutron-clang failed"; exit 1; }
 _antman_script=$(curl -fsSL "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman") || { error "antman download failed"; exit 1; }
 [ -n "$_antman_script" ] || { error "antman script empty"; exit 1; }
 bash -s -- -S <<<"$_antman_script" || { error "antman execution failed"; exit 1; }
-cd "$WORKDIR" || { error "cd \$WORKDIR failed"; exit 1; }
+cd "$WORKDIR" || { error "cd $WORKDIR failed"; exit 1; }
 if [ ! -d "$CLANG_BIN" ]; then
     error "Clang not found in ${CLANG_BIN}."
     exit 1
@@ -278,7 +278,7 @@ MODULE_SYMVERS="$OUTDIR/Module.symvers"
 KMI_CHECK="$WORKDIR/py/kmi-check-6.x.py"
 
 echo "::group::[*] Generating config"
-make ${MAKE_ARGS[@]} "$KERNEL_DEFCONFIG" || { error "make defconfig failed"; exit 1; }
+make "${MAKE_ARGS[@]}" "$KERNEL_DEFCONFIG" || { error "make defconfig failed"; exit 1; }
 [ -f "$OUTDIR/.config" ] || { error "$OUTDIR/.config not generated"; exit 1; }
 
 if [ "$KSU" = "KSUN" ]; then
@@ -300,8 +300,8 @@ if susfs_included; then
   echo ""
 
   log "DEBUG: Checking .config for SUSFS"
-  grep -q CONFIG_KSU_SUSFS "$OUTDIR/.config" || { error "SUSFS NOT ENABLED in .config!"; exit 1; }
-  grep -q CONFIG_KSU_SUSFS_SUS_MAP "$OUTDIR/.config" || { error "SUSFS_SUS_MAP not enabled!"; exit 1; }
+  grep -qx "CONFIG_KSU_SUSFS=y" "$OUTDIR/.config" || { error "SUSFS not =y in .config!"; exit 1; }
+  grep -qx "CONFIG_KSU_SUSFS_SUS_MAP=y" "$OUTDIR/.config" || { error "SUSFS_SUS_MAP not =y in .config!"; exit 1; }
   echo ""
 
   if grep -q "CONFIG_KSU_SUSFS" ./arch/arm64/configs/gki_defconfig && ! grep -q "CONFIG_KSU_SUSFS=y" "$OUTDIR/.config"; then
@@ -331,6 +331,7 @@ if [[ "${TODO:-}" == "defconfig" ]]; then
   exit 0
 fi
 
+if [ "${GITHUB_ACTIONS:-}" = "true" ]; then
 echo "::group::[*] Aggressive Resource Optimization for FullLTO"
 
 info "Initial storage: $(df -h / | awk 'NR==2 {print $4}') available"
@@ -431,10 +432,11 @@ sudo sysctl -w vm.overcommit_memory=1
 success "Final storage: $(df -h / | awk 'NR==2 {print $4}') available"
 success "Final memory:  $(free -h | awk '/^Mem:/ {print $7}') available | Swap: $(free -h | awk '/^Swap:/ {print $2}')"
 echo "::endgroup::"
+fi
 
 set -eo pipefail
 echo "::group::[*] Building kernel"
-make ${MAKE_ARGS[@]} CC="ccache clang" CXX="ccache clang++"
+make "${MAKE_ARGS[@]}" CC="ccache clang" CXX="ccache clang++"
 echo "::endgroup::"
 set +eo pipefail
 
