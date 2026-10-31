@@ -262,8 +262,8 @@ fi
 
 if [ "${LTO:-}" = "thinLTO" ]; then
     log "ThinLTO cache enabled"
-    mkdir -p "$LINK_CACHE_PATH"
-    mkdir -p "$(dirname "$LINKER_SHIM")"
+    mkdir -p "$LINK_CACHE_PATH" || { error "mkdir LINK_CACHE_PATH failed"; exit 1; }
+    mkdir -p "$(dirname "$LINKER_SHIM")" || { error "mkdir LINKER_SHIM dir failed"; exit 1; }
     cat > "$LINKER_SHIM" << SHIM || { error "heredoc SHIM write failed"; exit 1; }
 #!/usr/bin/env bash
 JOBCOUNT=\$(( \$(nproc --all) / 2 ))
@@ -306,7 +306,12 @@ if susfs_included; then
 
   if grep -q "CONFIG_KSU_SUSFS" ./arch/arm64/configs/gki_defconfig && ! grep -q "CONFIG_KSU_SUSFS=y" "$OUTDIR/.config"; then
     warning "SUSFS in defconfig but not in .config - checking dependencies..."
-    grep "depends on" $(find . -name "Kconfig" -exec grep -l "KSU_SUSFS" {} \;) 2>/dev/null || { error "SUSFS requested but dependencies missing in Kconfig"; exit 1; }
+    _kconfigs=$(find . -name "Kconfig" -exec grep -l "KSU_SUSFS" {} + 2>/dev/null || true)
+    if [ -z "$_kconfigs" ]; then
+      error "SUSFS requested but no Kconfig with KSU_SUSFS found"
+      exit 1
+    fi
+    grep "depends on" $_kconfigs 2>/dev/null || { error "SUSFS requested but dependencies missing in Kconfig"; exit 1; }
   fi
 
 fi
@@ -318,7 +323,7 @@ if [ "$TEST" = "yes" ]; then
   exit 0
 fi
 
-if [[ $TODO == "defconfig" ]]; then
+if [[ "${TODO:-}" == "defconfig" ]]; then
   log "Copying defconfig"
   mkdir -p "$RELEASE_DIR"
   cp "$OUTDIR/.config" "$RELEASE_DIR/config-${VARIANT}.txt"

@@ -264,23 +264,23 @@ build_and_install_pahole() {
         -D__LIB=lib \
         .. || {
         error "cmake failed"
-        cd "$start_dir"
+        cd "$start_dir" || true
         return 1
     }
 
     make -j"$(nproc)" || {
         error "pahole build failed"
-        cd "$start_dir"
+        cd "$start_dir" || true
         return 1
     }
 
     make install || {
         error "pahole install failed"
-        cd "$start_dir"
+        cd "$start_dir" || true
         return 1
     }
 
-    cd "$start_dir"
+    cd "$start_dir" || { error "cd back after pahole install failed"; return 1; }
 
     hash -r
     if ! command -v pahole >/dev/null 2>&1; then
@@ -311,8 +311,10 @@ apply_susfs_patches() {
       cd "$_susfs_pwd" || { error "cd back to KSRC failed"; return 1; }
     fi
 
-    if ! patch -p1 --fuzz=3 < "$SUSFS_PATCHES/50_add_susfs_in_${SUSFS_PATCH}.patch"; then
-        error "SuSFS core patch failed: 50_add_susfs_in_${SUSFS_PATCH}.patch"
+    _susfs_core="$SUSFS_PATCHES/50_add_susfs_in_${SUSFS_PATCH}.patch"
+    [ -f "$_susfs_core" ] || { error "SuSFS core patch missing: $_susfs_core"; return 1; }
+    if ! patch -p1 --fuzz=3 < "$_susfs_core"; then
+        error "SuSFS core patch failed: $_susfs_core"
         return 1
     fi
 
@@ -350,7 +352,7 @@ clone_susfs() {
         git -C "$SUSFS_DIR" fetch -q origin "$pin" 2>/dev/null || warning "pin fetch failed for $pin (may already be local)"
         if ! git -C "$SUSFS_DIR" checkout -q "$pin"; then
             error "Failed to checkout pinned commit $pin for KERNEL_VERSION=$KERNEL_VERSION on branch $SUSFS_BRANCH"
-            exit 1
+            return 1
         fi
         success "Commit pin $pin applied for KERNEL_VERSION=$KERNEL_VERSION (branch $SUSFS_BRANCH)"
     else

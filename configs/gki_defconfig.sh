@@ -78,7 +78,7 @@ fi
 
 if [ "$KSU_COMPAT" != "true" ]; then
   echo "🔧 Disable useless debugging configs for performance and resources"
-  cat >> $DEFCONFIG <<EOF
+  cat >> "$DEFCONFIG" <<EOF
 # Disable useless debugging configs for performance and resources
 CONFIG_RCU_TRACE=n
 EOF
