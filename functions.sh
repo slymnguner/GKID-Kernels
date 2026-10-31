@@ -305,9 +305,10 @@ apply_susfs_patches() {
     cp -R "$SUSFS_PATCHES/include/linux/." ./include/linux/ || { error "failed to copy SUSFS include patches"; return 1; }
 
     if [ "$SUSFS_PATCH" = "gki-android14-6.1" ]; then
-      cd $SUSFS_DIR
+      local _susfs_pwd="$PWD"
+      cd "$SUSFS_DIR" || { error "cd SUSFS_DIR failed"; return 1; }
       apply_patch_file "$KERNEL_PATCHES/susfs/susfs_fs_namespace_fix.patch" || true
-      cd $OLDPWD
+      cd "$_susfs_pwd" || { error "cd back to KSRC failed"; return 1; }
     fi
 
     if ! patch -p1 --fuzz=3 < "$SUSFS_PATCHES/50_add_susfs_in_${SUSFS_PATCH}.patch"; then

@@ -96,8 +96,8 @@ log "Changelog of repos"
 clone_susfs 5 || { error "susfs clone for changelog failed"; exit 1; }
 cd "$SUSFS_DIR" || { error "cd $SUSFS_DIR failed"; exit 1; }
 git log --pretty=format:"- [%h](https://${SUSFS_URL#https://}/commit/%H) %s" -5 "$SUSFS_BRANCH" \
-> "$RELEASE_DIR/susfs_changelog-${KERNEL_VERSION}.txt"
-cd ..
+> "$RELEASE_DIR/susfs_changelog-${KERNEL_VERSION}.txt" || { warning "susfs changelog write failed"; }
+cd "$WORKDIR" || { error "cd $WORKDIR failed (post-changelog)"; exit 1; }
 
 generate_gh_changelog "slymnguner/GKI-Duchamp-6.1" "$KERNEL_BRANCH" 10 "$RELEASE_DIR/android_kernel-6.1_changelog.txt"
 generate_gh_changelog "maxsteeel/nomount" "master" 5 "$RELEASE_DIR/nomount_changelog.txt"
@@ -105,8 +105,8 @@ generate_gh_changelog "KernelSU-Next/KernelSU-Next" "dev" 5 "$RELEASE_DIR/Kernel
 
 echo "::group::[*] Downloading Clang"
 CLANG_BIN="$WORKDIR/neutron-clang/bin"
-mkdir -p "$WORKDIR/neutron-clang"
-cd "$WORKDIR/neutron-clang"
+mkdir -p "$WORKDIR/neutron-clang" || { error "mkdir neutron-clang failed"; exit 1; }
+cd "$WORKDIR/neutron-clang" || { error "cd neutron-clang failed"; exit 1; }
 _antman_script=$(curl -fsSL "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman") || { error "antman download failed"; exit 1; }
 [ -n "$_antman_script" ] || { error "antman script empty"; exit 1; }
 bash -s -- -S <<<"$_antman_script" || { error "antman execution failed"; exit 1; }
@@ -264,12 +264,12 @@ if [ "${LTO:-}" = "thinLTO" ]; then
     log "ThinLTO cache enabled"
     mkdir -p "$LINK_CACHE_PATH"
     mkdir -p "$(dirname "$LINKER_SHIM")"
-    cat > "$LINKER_SHIM" << SHIM
+    cat > "$LINKER_SHIM" << SHIM || { error "heredoc SHIM write failed"; exit 1; }
 #!/usr/bin/env bash
 JOBCOUNT=\$(( \$(nproc --all) / 2 ))
 exec ld.lld "\$@" --thinlto-cache-dir="$LINK_CACHE_PATH" --thinlto-jobs=\$JOBCOUNT
 SHIM
-    chmod +x "$LINKER_SHIM"
+    chmod +x "$LINKER_SHIM" || { error "chmod SHIM failed"; exit 1; }
     MAKE_ARGS+=(LD="$LINKER_SHIM" HOSTLD="$LINKER_SHIM")
 fi
 
