@@ -4,3 +4,4 @@ __pycache__/
 .shims/
 *.bak-*
 *.before-*
+artifacts/
