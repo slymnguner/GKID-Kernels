@@ -97,12 +97,7 @@ git log --pretty=format:"- [%h](https://${SUSFS_URL#https://}/commit/%H) %s" -5 
 > "$RELEASE_DIR/susfs_changelog-${KERNEL_VERSION}.txt"
 cd ..
 
-if kernel_version_eq "$KERNEL_VERSION" "6.1"; then
-  generate_gh_changelog "slymnguner/GKI-Duchamp-6.1" "$KERNEL_BRANCH" 10 "$RELEASE_DIR/android_kernel-6.1_changelog.txt"
-else
-  echo "No changelog generator wired up yet for $KERNEL_VERSION" \
-    > "$RELEASE_DIR/android_kernel-${KERNEL_VERSION}_changelog.txt"
-fi
+generate_gh_changelog "slymnguner/GKI-Duchamp-6.1" "$KERNEL_BRANCH" 10 "$RELEASE_DIR/android_kernel-6.1_changelog.txt"
 generate_gh_changelog "maxsteeel/nomount" "master" 5 "$RELEASE_DIR/nomount_changelog.txt"
 generate_gh_changelog "KernelSU-Next/KernelSU-Next" "dev" 5 "$RELEASE_DIR/KernelSU-Next_changelog.txt"
 
@@ -166,27 +161,9 @@ if [ "$No_DS" = "true" ]; then
   VARIANT+="+NoDS"
 fi
 
-if { [ "$DROIDSPACES" = "true" ] || [ "$NH" = "true" ]; } && kernel_version_lt "$KERNEL_VERSION" "6.12"; then
+if [ "$DROIDSPACES" = "true" ] || [ "$NH" = "true" ]; then
   log "Applying DroidSpaces/NetHunter sysvipc patch"
   apply_patch_file "$KERNEL_PATCHES/droidspaces/001.GKI-below-6.12-fix_sysvipc_kabi_6_7_8.patch"
-  if kernel_version_eq "$KERNEL_VERSION" "5.10"; then
-    apply_patch_file "$KERNEL_PATCHES/droidspaces/002.5.10_or_lower_use_android_abi_padding_for_posix_mqueue.patch"
-  fi
-elif [ "$DROIDSPACES" = "true" ] || [ "$NH" = "true" ]; then
-  log "Applying DroidSpaces/NetHunter sysvipc patch"
-  apply_patch_file "$KERNEL_PATCHES/droidspaces/001.GKI-6.12-or-above-fix_sysvipc_kabi.patch"
-fi
-
-if [ "$NH" = "true" ] && ! kernel_version_eq "$KERNEL_VERSION" "6.1" && [ "$No_DS" = "false" ]; then
-  log "Applying NetHunter patches"
-  apply_patch_file "$KERNEL_PATCHES/nethunter/0001-mac80211-cfg80211-Add-monitor-mode-and-packet-inject.patch"
-  git clone --depth=1 "https://github.com/slymnguner/rtw88"
-  rm -rf "drivers/net/wireless/realtek/rtw88"
-  mv rtw88 "drivers/net/wireless/realtek/"
-
-  if kernel_version_lt "$KERNEL_VERSION" "6.1"; then
-    apply_patch_file "$KERNEL_PATCHES/nethunter/0001-wifi-rtw88-rtw8723x-avoid-shared-loop-variable-name-.patch"
-  fi
 fi
 
 set -eo pipefail
