@@ -71,7 +71,6 @@ fi
 
 cd $KSRC
 LINUX_VERSION=$(make kernelversion)
-LINUX_VERSION_CODE=${LINUX_VERSION//./}
 DEFCONFIG_FILE=$(find ./arch/arm64/configs -name "$KERNEL_DEFCONFIG")
 echo "LINUX_VERSION=$LINUX_VERSION" >> $GITHUB_ENV
 cd $WORKDIR

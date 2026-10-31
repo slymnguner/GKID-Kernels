@@ -38,21 +38,6 @@ kernel_version_eq() {
   return 0
 }
 
-kernel_version_ge() {
-  kernel_version_lt "$1" "$2" && return 1
-  return 0
-}
-
-kernel_version_gt() {
-  [ "$1" = "$2" ] && return 1
-  kernel_version_lt "$2" "$1"
-}
-
-kernel_version_le() {
-  kernel_version_gt "$1" "$2" && return 1
-  return 0
-}
-
 susfs_included() {
   [ "$KSU_SUSFS" == "true" ]
   return $?

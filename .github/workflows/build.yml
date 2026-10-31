@@ -146,7 +146,6 @@ jobs:
           DROIDSPACES: ${{ inputs.DROIDSPACES }}
           NH: ${{ inputs.NH }}
           NM: ${{ inputs.NM }}
-          BUILD_NAME: ${{ matrix.name }}
           RUN_NUM: -r${{ github.run_number }}
         run: |
           export GIT_CLONE_PROTECTION_ACTIVE=false
