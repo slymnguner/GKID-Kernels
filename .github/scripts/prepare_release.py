@@ -9,7 +9,8 @@ KERNEL_VERSION_ORDER = ["6.1"]
 
 def read_or_default(path, default="*No changelog available*"):
 	if os.path.isfile(path):
-		return open(path).read().rstrip("\n")
+		with open(path) as f:
+			return f.read().rstrip("\n")
 	return default
 
 
@@ -177,20 +178,14 @@ def build_release_body():
 
 ## 🧭 Which variant should I flash?
 
-| Variant | Root | SuSFS | LTO | Compat |
-|---------|------|-------|-----|--------|
-| Vanilla | ❌ | ❌ | Full | ❌ |
-| Vanilla+NoLTO | ❌ | ❌ | ❌ | ❌ |
-| KernelSU | ✅ | ❌ | Full | ❌ |
-| KernelSU+SuSFS | ✅ | ✅ | Full | ❌ |
-| KSU+SuSFS+MM | ✅ | ✅ | Full | ❌ |
-| BakaSU+SuSFS | ✅ | ✅ | Full | ❌ |
-| KernelSU-Next | ✅ | ❌ | Full | ❌ |
-| KernelSU-Next+SuSFS | ✅ | ✅ | Full | ❌ |
-| Compat+KSU+SuSFS | ✅ | ✅ | ❌ | ✅ |
-| Compat+BakaSU+SuSFS | ✅ | ✅ | ❌ | ✅ |
-| Compat+KernelSU-Next | ✅ | ❌ | ❌ | ✅ |
-| Compat+KernelSU-Next+SuSFS | ✅ | ✅ | ❌ | ✅ |
+| Variant | Root | SuSFS | LTO | Compat | NoDS |
+|---------|------|-------|-----|--------|------|
+| KSUN | ✅ | ❌ | Full | ❌ | ❌ |
+| KSUN+SuSFS | ✅ | ✅ | Full | ❌ | ❌ |
+| Compat+KSUN | ✅ | ❌ | ❌ | ✅ | ❌ |
+| Compat+KSUN+SuSFS | ✅ | ✅ | ❌ | ✅ | ❌ |
+| Compat+NoDS+KSUN | ✅ | ❌ | ❌ | ✅ | ✅ |
+| Compat+NoDS+KSUN+SuSFS | ✅ | ✅ | ❌ | ✅ | ✅ |
 
 **Not sure? Use a `Compat` variant first**: it fixes most boot issues. Full feature breakdown, LTO explanation, and troubleshooting live in the [README](https://github.com/{repo}#-build-variants).
 
@@ -284,20 +279,6 @@ Test both and use whichever performs better on your network.
 **Full commit history:** [Browse all commits](https://github.com/maxsteeel/nomount/commits/master)
 
 ---
-**KernelSU changelog (last 5 commits):**
-
-{read_or_default("release-artifacts/ksu_changelog.txt")}
-
-**Full commit history:** [Browse all commits](https://github.com/tiann/KernelSU/commits/main)
-
----
-**BakaSU changelog (last 5 commits):**
-
-{read_or_default("release-artifacts/BakaSU_changelog.txt")}
-
-**Full commit history:** [Browse all commits](https://github.com/Baka-SU/BakaSU/commits/main)
-
----
 **KernelSU Next changelog (last 5 commits):**
 
 {read_or_default("release-artifacts/KernelSU-Next_changelog.txt")}
@@ -309,7 +290,6 @@ Test both and use whichever performs better on your network.
 > **Checksums:**
 > SHA256 checksums for all files in this release are available in [`checksums.txt`](https://github.com/{repo}/releases/download/{tag}/checksums.txt), attached below.
 """
-	return body, versions, shared_env, all_builds
 	return body, versions, shared_env, all_builds
 
 
