@@ -3,7 +3,7 @@ name: Feature Request
 about: Suggest a new kernel feature, optimization, or compatibility improvement
 title: "[FEAT]: "
 labels: enhancement
-assignees: ahmed-alnassif
+assignees: slymnguner
 
 ---
 

@@ -1,0 +1,7 @@
+*.before-fix
+__pycache__/
+*.pyc
+.shims/
+*.bak-*
+*.before-*
+artifacts/

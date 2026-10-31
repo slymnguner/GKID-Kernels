@@ -4,17 +4,25 @@
 DEFCONFIG="arch/arm64/configs/gki_defconfig"
 
 function apply_config(){
-  cat "$1" >> "$2"
+  if [ ! -f "$1" ]; then
+    echo "⚠  missing config file: $1 (skipped)" >&2
+    return 0
+  fi
+  cat "$1" >> "$2" || { echo "FATAL: failed to append $1 to $2" >&2; return 1; }
 }
 
 if [ "$KSU" != "no" ]; then
   # Base KSU Config & Dependencies
   echo "⚙️ Added KSU configuration"
-  cat >> $DEFCONFIG <<EOF
-CONFIG_KSU=y
-CONFIG_KPM=y
-EOF
+  echo "CONFIG_KSU=y" >> "$DEFCONFIG"
+  # KPM is not part of the KernelSU-Next kernel source.
+  if [ "$KSU" != "KSUN" ]; then
+    echo "CONFIG_KPM=y" >> "$DEFCONFIG"
+  fi
 fi
+
+echo "🧩 Adding Built-in Features"
+apply_config "$WORKDIR/configs/features.config" "$DEFCONFIG"
 
 if [ "$KSU_SUSFS" = "true" ]; then
   echo "🔧 Mode: SuSFS Hook Enabled"
@@ -53,6 +61,11 @@ EOF
     ;;
 esac
 
+if [ "$No_DS" = "true" ]; then
+  export DROIDSPACES="false"
+  export NH="false"
+fi
+
 if [ "$DROIDSPACES" = "true" ]; then
   echo "🐳 DroidSpaces support enabled"
   apply_config "$WORKDIR/configs/droidspaces.config" "$DEFCONFIG"
@@ -65,10 +78,8 @@ fi
 
 if [ "$KSU_COMPAT" != "true" ]; then
   echo "🔧 Disable useless debugging configs for performance and resources"
-  cat >> $DEFCONFIG <<EOF
+  cat >> "$DEFCONFIG" <<EOF
 # Disable useless debugging configs for performance and resources
-CONFIG_UBSAN=n
-CONFIG_PAGE_OWNER=n
 CONFIG_RCU_TRACE=n
 EOF
 fi

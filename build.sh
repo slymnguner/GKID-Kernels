@@ -4,10 +4,10 @@ WORKDIR="$(pwd)"
 RELEASE_DIR="$WORKDIR/artifacts"
 
 KERNEL_NAME="GKID"
-USER="ahmed-alnassif"
+USER="slymnguner"
 HOST="GKID"
-TIMEZONE="Asia/Damascus"
-ANYKERNEL_REPO="https://github.com/ahmed-alnassif/AK3-GKID"
+TIMEZONE="Europe/Istanbul"
+ANYKERNEL_REPO="https://github.com/slymnguner/AK3-GKID"
 
 KERNEL_DEFCONFIG="gki_defconfig"
 
@@ -17,37 +17,43 @@ sudo timedatectl set-timezone "$TIMEZONE" || export TZ="$TIMEZONE"
 
 RELEASE="$(date +v%y.%m.%d)${RUN_NUM}"
 
-mkdir -p $RELEASE_DIR
+mkdir -p "$RELEASE_DIR" || { echo "FATAL: mkdir $RELEASE_DIR failed" >&2; exit 1; }
 
-GKI_RELEASES_REPO="https://github.com/ahmed-alnassif/GKID-Kernels"
+GKI_RELEASES_REPO="https://github.com/${GITHUB_REPOSITORY:-slymnguner/GKID-Kernels}"
 AK3_ZIP_NAME="$KERNEL_NAME-VARIANT-REL-KVER.zip"
 OUTDIR="$WORKDIR/out"
 KSRC="$WORKDIR/ksrc"
 KERNEL_PATCHES="$WORKDIR/kernel-patches"
 PATCHES_DIR="$WORKDIR/patches"
 
-source $WORKDIR/functions.sh
+[ -f "$WORKDIR/functions.sh" ] || { echo "FATAL: functions.sh missing at $WORKDIR" >&2; exit 1; }
+source "$WORKDIR/functions.sh"
 
-if [ "$KERNEL_VERSION" = "6.1" ]; then
-  if [ "$NH" = "true" ]; then
-    KERNEL_BRANCH="GKID-NH"
-  else
-    KERNEL_BRANCH="GKID-6.1"
-  fi
+# --- Feature normalization: No_DS overrides NH and DROIDSPACES before
+#     any downstream logic (kernel branch selection, patches) runs. ---
+if [ "$No_DS" = "true" ]; then
+  NH="false"
+  DROIDSPACES="false"
+fi
+# ----------------------------------------------------------------------
+
+KERNEL_REPO="${KERNEL_REPO:-https://github.com/slymnguner/GKI-Duchamp-6.1}"
+if [ "$NH" = "true" ]; then
+  KERNEL_BRANCH="GKID-NH"
 else
-  IFS='|' read -r KERNEL_REPO KERNEL_BRANCH KERNEL_KMI <<< "$(resolve_kernel_source "$KERNEL_VERSION")"
+  KERNEL_BRANCH="GKID-6.1"
 fi
 
 ANDROID_RELEASE="$(android_release_for_version "$KERNEL_VERSION")"
-echo "KERNEL_VERSION=$KERNEL_VERSION" >> $GITHUB_ENV
-echo "ANDROID_RELEASE=$ANDROID_RELEASE" >> $GITHUB_ENV
-echo "KERNEL_SOURCE_REPO=$(simplify_gh_url "$KERNEL_REPO")" >> $GITHUB_ENV
-echo "KERNEL_SOURCE_BRANCH=$KERNEL_BRANCH" >> $GITHUB_ENV
+echo "KERNEL_VERSION=$KERNEL_VERSION" >> "${GITHUB_ENV:-/dev/null}"
+echo "ANDROID_RELEASE=$ANDROID_RELEASE" >> "${GITHUB_ENV:-/dev/null}"
+echo "KERNEL_SOURCE_REPO=$(simplify_gh_url "$KERNEL_REPO")" >> "${GITHUB_ENV:-/dev/null}"
+echo "KERNEL_SOURCE_BRANCH=$KERNEL_BRANCH" >> "${GITHUB_ENV:-/dev/null}"
 
-echo "RELEASE_REPO=$(simplify_gh_url "$GKI_RELEASES_REPO")" >> $GITHUB_ENV
-echo "KERNEL_NAME=${KERNEL_NAME}${RUN_NUM}" >> $GITHUB_ENV
-echo "RELEASE_NAME=$KERNEL_NAME $RELEASE" >> $GITHUB_ENV
-echo "RELEASE=$RELEASE" >> $GITHUB_ENV
+echo "RELEASE_REPO=$(simplify_gh_url "$GKI_RELEASES_REPO")" >> "${GITHUB_ENV:-/dev/null}"
+echo "KERNEL_NAME=${KERNEL_NAME}${RUN_NUM}" >> "${GITHUB_ENV:-/dev/null}"
+echo "RELEASE_NAME=$KERNEL_NAME $RELEASE" >> "${GITHUB_ENV:-/dev/null}"
+echo "RELEASE=$RELEASE" >> "${GITHUB_ENV:-/dev/null}"
 
 BUILD_LOGS="$RELEASE_DIR/build.log"
 exec > >(tee -a "$BUILD_LOGS") 2>&1
@@ -58,27 +64,23 @@ trap 'echo "[-] Received SIGTERM at $(date) - possible GitHub kill" >> "$BUILD_L
 trap 'echo "[-] Received SIGINT at $(date)" >> "$BUILD_LOGS"' INT
 
 log "Cloning kernel source from $(simplify_gh_url "$KERNEL_REPO")"
-if [ "$KERNEL_VERSION" = "6.1" ]; then
-  git clone -q --depth=1 --recurse-submodules "$KERNEL_REPO" -b "$KERNEL_BRANCH" "$KSRC"
+if kernel_version_eq "$KERNEL_VERSION" "6.1"; then
+  git clone -q --depth=1 --recurse-submodules "$KERNEL_REPO" -b "$KERNEL_BRANCH" "$KSRC" || { error "kernel clone failed: $KERNEL_REPO ($KERNEL_BRANCH)"; exit 1; }
 else
-  git clone -q --depth=1 "$KERNEL_REPO" -b "$KERNEL_BRANCH" "$KSRC"
+  git clone -q --depth=1 "$KERNEL_REPO" -b "$KERNEL_BRANCH" "$KSRC" || { error "kernel clone failed: $KERNEL_REPO ($KERNEL_BRANCH)"; exit 1; }
 fi
 
-cd $KSRC
-LINUX_VERSION=$(make kernelversion)
-LINUX_VERSION_CODE=${LINUX_VERSION//./}
-DEFCONFIG_FILE=$(find ./arch/arm64/configs -name "$KERNEL_DEFCONFIG")
-echo "LINUX_VERSION=$LINUX_VERSION" >> $GITHUB_ENV
-cd $WORKDIR
+cd "$KSRC" || { error "cd $KSRC failed"; exit 1; }
+LINUX_VERSION=$(make kernelversion) || { error "make kernelversion failed"; exit 1; }
+[ -n "$LINUX_VERSION" ] || { error "empty LINUX_VERSION"; exit 1; }
+DEFCONFIG_FILE=$(find ./arch/arm64/configs -name "$KERNEL_DEFCONFIG" -print -quit)
+[ -n "$DEFCONFIG_FILE" ] || { error "defconfig '$KERNEL_DEFCONFIG' not found under arch/arm64/configs"; exit 1; }
+echo "LINUX_VERSION=$LINUX_VERSION" >> "${GITHUB_ENV:-/dev/null}"
+cd "$WORKDIR" || { error "cd \$WORKDIR failed"; exit 1; }
 
 log "Setting Kernel variant"
 case "$KSU" in
-  "SKSU") VARIANT="SukiSU-Ultra" ;;
-  "RSKSU") VARIANT="ReSukiSU" ;;
-  "KSU") VARIANT="KernelSU" ;;
   "KSUN") VARIANT="KernelSU-Next" ;;
-  "no") VARIANT="Vanilla" ;;
-  "vnlto") VARIANT="Vanilla+NoLTO" ;;
   *) VARIANT="Vanilla" ;;
 esac
 
@@ -87,38 +89,28 @@ SUSFS_URL="https://gitlab.com/simonpunk/susfs4ksu"
 SUSFS_DIR="$WORKDIR/susfs"
 SUSFS_PATCHES="${SUSFS_DIR}/kernel_patches"
 
-if [ "$KERNEL_VERSION" = "6.1" ]; then
-  SUSFS_BRANCH="gki-android14-6.1"
-  SUSFS_PATCH="gki-android14-6.1"
-else
-  SUSFS_BRANCH="$(resolve_susfs_branch "$KERNEL_VERSION")"
-  SUSFS_PATCH="$SUSFS_BRANCH"
-fi
+SUSFS_BRANCH="gki-android14-6.1"
+SUSFS_PATCH="gki-android14-6.1"
 
 log "Changelog of repos"
-clone_susfs 5
-cd "$SUSFS_DIR"
+clone_susfs 5 || { error "susfs clone for changelog failed"; exit 1; }
+cd "$SUSFS_DIR" || { error "cd $SUSFS_DIR failed"; exit 1; }
 git log --pretty=format:"- [%h](https://${SUSFS_URL#https://}/commit/%H) %s" -5 "$SUSFS_BRANCH" \
-> "$RELEASE_DIR/susfs_changelog-${KERNEL_VERSION}.txt"
-cd ..
+> "$RELEASE_DIR/susfs_changelog-${KERNEL_VERSION}.txt" || { warning "susfs changelog write failed"; }
+cd "$WORKDIR" || { error "cd $WORKDIR failed (post-changelog)"; exit 1; }
 
-if [ "$KERNEL_VERSION" = "6.1" ]; then
-  generate_gh_changelog "ahmed-alnassif/GKI-Duchamp-6.1" "$KERNEL_BRANCH" 10 "$RELEASE_DIR/android_kernel-6.1_changelog.txt"
-else
-  echo "No changelog generator wired up yet for $KERNEL_VERSION" \
-    > "$RELEASE_DIR/android_kernel-${KERNEL_VERSION}_changelog.txt"
-fi
+generate_gh_changelog "slymnguner/GKI-Duchamp-6.1" "$KERNEL_BRANCH" 10 "$RELEASE_DIR/android_kernel-6.1_changelog.txt"
 generate_gh_changelog "maxsteeel/nomount" "master" 5 "$RELEASE_DIR/nomount_changelog.txt"
-generate_gh_changelog "tiann/KernelSU" "main" 5 "$RELEASE_DIR/ksu_changelog.txt"
-generate_gh_changelog "ReSukiSU/ReSukiSU" "main" 5 "$RELEASE_DIR/ReSukiSU_changelog.txt"
-generate_gh_changelog "KernelSU-Next/KernelSU-Next" "dev" 5 "$RELEASE_DIR/ksun_changelog.txt"
+generate_gh_changelog "KernelSU-Next/KernelSU-Next" "dev" 5 "$RELEASE_DIR/KernelSU-Next_changelog.txt"
 
 echo "::group::[*] Downloading Clang"
 CLANG_BIN="$WORKDIR/neutron-clang/bin"
-mkdir -p "$WORKDIR/neutron-clang"
-cd "$WORKDIR/neutron-clang"
-bash <(curl -s "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman") -S
-cd $OLDPWD
+mkdir -p "$WORKDIR/neutron-clang" || { error "mkdir neutron-clang failed"; exit 1; }
+cd "$WORKDIR/neutron-clang" || { error "cd neutron-clang failed"; exit 1; }
+_antman_script=$(curl -fsSL "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman") || { error "antman download failed"; exit 1; }
+[ -n "$_antman_script" ] || { error "antman script empty"; exit 1; }
+bash -s -- -S <<<"$_antman_script" || { error "antman execution failed"; exit 1; }
+cd "$WORKDIR" || { error "cd \$WORKDIR failed"; exit 1; }
 if [ ! -d "$CLANG_BIN" ]; then
     error "Clang not found in ${CLANG_BIN}."
     exit 1
@@ -127,6 +119,7 @@ fi
 export PATH="${CLANG_BIN}:$PATH"
 echo "::endgroup::"
 
+command -v ccache >/dev/null || { error "ccache not installed"; exit 1; }
 export CCACHE_DIR="$HOME/.ccache"
 export CCACHE_BASEDIR="$WORKDIR"
 export CCACHE_NOHARDLINK=true
@@ -142,149 +135,86 @@ ccache --set-config=base_dir="$WORKDIR"
 ccache --set-config=compiler_check=content
 
 COMPILER_STRING=$(clang -v 2>&1 | head -n 1 | sed 's/(https..*//' | sed 's/ version//')
-echo "COMPILER_STRING=$COMPILER_STRING" >> $GITHUB_ENV
+echo "COMPILER_STRING=$COMPILER_STRING" >> "${GITHUB_ENV:-/dev/null}"
 
-cd $KSRC
+cd "$KSRC" || { error "cd $KSRC failed"; exit 1; }
 
 echo "::group::[+] pahole installation"
-build_and_install_pahole
+build_and_install_pahole || { error "pahole install failed"; exit 1; }
 echo "::endgroup::"
 
 echo "::group::[+] Applied patches"
 
-if [ "$KERNEL_VERSION" != "6.1" ]; then
-  apply_kernel_patches
-  apply_force_load_module_patch
-  apply_extract_cert_key_pass_patch
-  cleanup_abi_gki_protected_exports
-fi
-
 
 log "Applying BBRv3 patch"
-apply_patch_file $KERNEL_PATCHES/bbrv3/bbrv3.patch
+apply_patch_file "$KERNEL_PATCHES/bbrv3/bbrv3.patch" || { error "BBRv3 patch failed"; exit 1; }
 
 
 if kernel_version_lt "$KERNEL_VERSION" "6.12"; then
   log "Applying NTSync patches..."
-  curl -LSs "https://github.com/WildKernels/kernel_patches/raw/main/common/ntsync/ntsync_base.patch" | apply_patch_file
+  _ntsync_base=$(curl -fLSs "https://github.com/WildKernels/kernel_patches/raw/main/common/ntsync/ntsync_base.patch") || { error "ntsync_base download failed"; exit 1; }
+  [ -n "$_ntsync_base" ] || { error "ntsync_base patch empty"; exit 1; }
+  printf '%s' "$_ntsync_base" | apply_patch_file || { error "ntsync_base apply failed"; exit 1; }
 
-  if [ "$KERNEL_VERSION" = "6.1" ]; then
-    curl -LSs "https://github.com/WildKernels/kernel_patches/raw/main/common/ntsync/ntsync_compat_android14-6.1.patch" | apply_patch_file
-  else
-    apply_ntsync_compat_patch "$KERNEL_KMI"
-  fi
+  _ntsync_compat=$(curl -fLSs "https://github.com/WildKernels/kernel_patches/raw/main/common/ntsync/ntsync_compat_android14-6.1.patch") || { error "ntsync_compat download failed"; exit 1; }
+  [ -n "$_ntsync_compat" ] || { error "ntsync_compat patch empty"; exit 1; }
+  printf '%s' "$_ntsync_compat" | apply_patch_file || { error "ntsync_compat apply failed"; exit 1; }
   success "NTSync patches applied"
 fi
 
 log "BBG included"
-wget -qO- "https://github.com/vc-teahouse/Baseband-guard/raw/main/setup.sh" | bash
-sed -i '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ { /baseband_guard/! s/selinux/selinux,baseband_guard/ } }' "security/Kconfig"
+_bbg_script=$(wget -qO- "https://github.com/vc-teahouse/Baseband-guard/raw/main/setup.sh") || { error "BBG setup.sh download failed"; exit 1; }
+[ -n "$_bbg_script" ] || { error "BBG setup.sh empty"; exit 1; }
+bash <<<"$_bbg_script" || { error "BBG setup.sh execution failed"; exit 1; }
+[ -f "security/Kconfig" ] || { error "security/Kconfig missing after BBG"; exit 1; }
+sed -i '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ { /baseband_guard/! s/selinux/selinux,baseband_guard/ } }' "security/Kconfig" || { error "BBG Kconfig sed failed"; exit 1; }
 
-if [ "$KSU" = "no" ] || [ "$KSU" = "vnlto" ]; then
-  export DROIDSPACES="false"
-  warning "DroidSpaces doesn't supported in vanilla builds"
+if [ "$No_DS" = "true" ]; then
   VARIANT+="+NoDS"
 fi
 
-if { [ "$DROIDSPACES" = "true" ] || [ "$NH" = "true" ]; } && kernel_version_lt "$KERNEL_VERSION" "6.12"; then
+if [ "$DROIDSPACES" = "true" ] || [ "$NH" = "true" ]; then
   log "Applying DroidSpaces/NetHunter sysvipc patch"
-  apply_patch_file "$KERNEL_PATCHES/droidspaces/001.GKI-below-6.12-fix_sysvipc_kabi_6_7_8.patch"
-elif [ "$DROIDSPACES" = "true" ] || [ "$NH" = "true" ]; then
-  log "Applying DroidSpaces/NetHunter sysvipc patch"
-  apply_patch_file "$KERNEL_PATCHES/droidspaces/001.GKI-6.12-or-above-fix_sysvipc_kabi.patch"
-fi
-
-if [ "$NH" = "true" ]; then
-  log "Applying NetHunter patches"
-  apply_patch_file "$KERNEL_PATCHES/nethunter/0001-mac80211-cfg80211-Add-monitor-mode-and-packet-inject.patch"
-  git clone --depth=1 "https://github.com/ahmed-alnassif/rtw88"
-  rm -rf "drivers/net/wireless/realtek/rtw88"
-  mv rtw88 "drivers/net/wireless/realtek/"
-
-  if kernel_version_lt "$KERNEL_VERSION" "6.1"; then
-    apply_patch_file "$KERNEL_PATCHES/nethunter/0001-wifi-rtw88-rtw8723x-avoid-shared-loop-variable-name-.patch"
-  fi
+  apply_patch_file "$KERNEL_PATCHES/droidspaces/001.GKI-below-6.12-fix_sysvipc_kabi_6_7_8.patch" || { error "DroidSpaces sysvipc patch failed"; exit 1; }
 fi
 
 set -eo pipefail
-if susfs_included && [ "$KSU" = "RSKSU" ]; then
-  log "ReSukiSU included"
-
-  git clone --depth=1 "https://github.com/ReSukiSU/ReSukiSU" -b "sync-upstream"
-
-  bash "ReSukiSU/kernel/setup.sh" "sync-upstream"
-
-  # install_ksu "ReSukiSU/ReSukiSU" "main"
-
-  clone_susfs
-  apply_susfs_patches
-
-fi
-
-if [ "$KSU" = "KSU" ]; then
-  log "KernelSU included"
-  if ! susfs_included; then
-    install_ksu "tiann/KernelSU" "main"
-  fi
-
-  if susfs_included; then
-    VARIANT+="+Multiple-Managers"
-    git clone "https://github.com/tiann/KernelSU" && echo "[+] Repository cloned."
-    clone_susfs
-
-    cd KernelSU
-    #git reset --hard "61c6313"
-    git reset --soft HEAD~1
-    apply_patch_file "$PATCHES_DIR/0001-feat-avc-log-spoofing.patch"
-    apply_patch_file "$PATCHES_DIR/0001-feat-add-multiple-managers.patch"
-    apply_patch_file "$PATCHES_DIR/0001-feat-throne_tracker-offload-to-kthread.patch"
-    apply_patch_file "$SUSFS_PATCHES/KernelSU/10_enable_susfs_for_ksu.patch"
-    apply_patch_file "$PATCHES_DIR/0001-feat-escape-persistent_allow_list-to-kthread.patch"
-    apply_patch_file "$PATCHES_DIR/0001-feat-supercalls-allow-userspace-to-pull-list-entries.patch"
-    sed -i "/    git pull && echo \"\[+\] Repository updated.\"/d" "kernel/setup.sh"
-    git config --global user.email "mr.ahmed.nassif@gmail.com"
-    git config --global user.name "Ahmed Al-Nassif"
-    git add .
-    git commit -m "susfs patch"
-    cd ..
-    bash "KernelSU/kernel/setup.sh" "main"
-
-    apply_susfs_patches
-
-  fi
-
-fi
-
 if [ "$KSU" = "KSUN" ]; then
-  log "KernelSU-Next included"
   if susfs_included; then
-    install_ksu "pershoot/KernelSU-Next" "dev-susfs"
+    log "KernelSU Next + SuSFS included (pershoot dev-susfs)"
+      _knu_script=$(curl -fLSs "https://raw.githubusercontent.com/pershoot/KernelSU-Next/refs/heads/dev-susfs/kernel/setup.sh") \
+      || { error "KernelSU-Next setup.sh download failed (pershoot/dev-susfs)"; exit 1; }
+      [ -n "$_knu_script" ] || { error "KernelSU-Next setup.sh empty (pershoot/dev-susfs)"; exit 1; }
+      bash <<<"$_knu_script" -s dev-susfs || { error "KernelSU-Next setup.sh execution failed (pershoot/dev-susfs)"; exit 1; }
+
+    KSUN_BRANCH="$(git -C "$KSRC/KernelSU-Next" symbolic-ref --short HEAD 2>/dev/null || true)"
+    if [ "$KSUN_BRANCH" != "dev-susfs" ]; then
+      error "KernelSU Next SuSFS branch mismatch (expected dev-susfs, got ${KSUN_BRANCH:-detached HEAD})"
+      exit 1
+    fi
+
+    clone_susfs || { error "susfs clone failed (KSU+SUSFS path)"; exit 1; }
+    apply_susfs_patches || { error "apply_susfs_patches failed"; exit 1; }
   else
-    install_ksu "KernelSU-Next/KernelSU-Next" "dev"
+    log "KernelSU Next included (latest tagged release)"
+      _knu_dev_script=$(curl -fLSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/dev/kernel/setup.sh") \
+      || { error "KernelSU-Next setup.sh download failed (dev)"; exit 1; }
+      [ -n "$_knu_dev_script" ] || { error "KernelSU-Next setup.sh empty (dev)"; exit 1; }
+      bash <<<"$_knu_dev_script" - || { error "KernelSU-Next setup.sh execution failed (dev)"; exit 1; }
   fi
-
-  if susfs_included; then
-
-    clone_susfs
-    apply_susfs_patches
-
-  fi
-
 fi
 
 if [ "$KSU_COMPAT" = "true" ]; then
-  if [ "$C_LTO" = "true" ]; then
-    VARIANT="Compat+${VARIANT}"
-  else
-    VARIANT="Compat+NoLTO+${VARIANT}"
-  fi
+  VARIANT="Compat+NoLTO+${VARIANT}"
 fi
 
-echo "VARIANT=$VARIANT" >> $GITHUB_ENV
+echo "VARIANT=$VARIANT" >> "${GITHUB_ENV:-/dev/null}"
 
 if [ "$NM" = "true" ]; then
   log "Applying NoMount"
-  curl "https://raw.githubusercontent.com/maxsteeel/nomount/refs/heads/dev/kernel/setup.sh" | bash -s master
+  _nomount_script=$(curl -fLSs "https://raw.githubusercontent.com/maxsteeel/nomount/refs/heads/dev/kernel/setup.sh") || { error "NoMount download failed"; exit 1; }
+  [ -n "$_nomount_script" ] || { error "NoMount setup.sh empty"; exit 1; }
+  bash <<<"$_nomount_script" -s master || { error "NoMount setup failed"; exit 1; }
 fi
 echo "::endgroup::"
 set +eo pipefail
@@ -293,23 +223,28 @@ AK3_ZIP_NAME=${AK3_ZIP_NAME//KVER/$LINUX_VERSION}
 AK3_ZIP_NAME=${AK3_ZIP_NAME//VARIANT/$VARIANT}
 
 log "Applying configs..."
-source "$WORKDIR/configs/gki_defconfig.sh"
+[ -f "$WORKDIR/configs/gki_defconfig.sh" ] || { error "configs/gki_defconfig.sh missing"; exit 1; }
+source "$WORKDIR/configs/gki_defconfig.sh" || { error "sourcing gki_defconfig.sh failed"; exit 1; }
 
 if [ "${TODO:-kernel}" = "kernel" ]; then
-  LATEST_COMMIT_HASH=$(git rev-parse --short HEAD)
-  SUFFIX="${RELEASE}/${LATEST_COMMIT_HASH}"
-  config --set-str CONFIG_LOCALVERSION "-$KERNEL_NAME/$SUFFIX"
-  config --disable CONFIG_LOCALVERSION_AUTO
-  sed -i 's/echo "+"/# echo "+"/g' scripts/setlocalversion
+  LATEST_COMMIT_HASH=$(git rev-parse --short HEAD 2>/dev/null) || { error "git rev-parse failed in $KSRC"; exit 1; }
+  SUFFIX="${RUN_NUM}-${LATEST_COMMIT_HASH}"
+  config --set-str CONFIG_LOCALVERSION "-${KERNEL_NAME}${SUFFIX}" || { error "config set-str CONFIG_LOCALVERSION failed"; exit 1; }
+  config --disable CONFIG_LOCALVERSION_AUTO || { error "config disable CONFIG_LOCALVERSION_AUTO failed"; exit 1; }
+  if [ -f scripts/setlocalversion ]; then
+    sed -i 's/echo "+"/# echo "+"/g' scripts/setlocalversion || warning "setlocalversion sed failed (non-fatal)"
+  else
+    warning "scripts/setlocalversion not found (non-fatal)"
+  fi
 fi
 
 export KBUILD_BUILD_USER="$USER"
 export KBUILD_BUILD_HOST="$HOST"
-export KBUILD_BUILD_TIMESTAMP=$(git -C $KSRC log -1 --format=%cd --date=format-local:'%a %b %d %T %z %Y')
+export KBUILD_BUILD_TIMESTAMP="$(git -C "$KSRC" log -1 --format=%cd --date=format-local:'%a %b %d %T %z %Y')"
 export KCFLAGS="-w"
 
 LINK_CACHE_PATH="/dev/shm/thinlto-cache"
-LINKER_SHIM="/tmp/clang-lto-linker"
+LINKER_SHIM="$WORKDIR/.shims/clang-lto-linker"
 MAKE_ARGS=(
   LLVM=1
   LLVM_IAS=1
@@ -327,13 +262,14 @@ fi
 
 if [ "${LTO:-}" = "thinLTO" ]; then
     log "ThinLTO cache enabled"
-    mkdir -p "$LINK_CACHE_PATH"
-    cat > "$LINKER_SHIM" << SHIM
+    mkdir -p "$LINK_CACHE_PATH" || { error "mkdir LINK_CACHE_PATH failed"; exit 1; }
+    mkdir -p "$(dirname "$LINKER_SHIM")" || { error "mkdir LINKER_SHIM dir failed"; exit 1; }
+    cat > "$LINKER_SHIM" << SHIM || { error "heredoc SHIM write failed"; exit 1; }
 #!/usr/bin/env bash
 JOBCOUNT=\$(( \$(nproc --all) / 2 ))
 exec ld.lld "\$@" --thinlto-cache-dir="$LINK_CACHE_PATH" --thinlto-jobs=\$JOBCOUNT
 SHIM
-    chmod +x "$LINKER_SHIM"
+    chmod +x "$LINKER_SHIM" || { error "chmod SHIM failed"; exit 1; }
     MAKE_ARGS+=(LD="$LINKER_SHIM" HOSTLD="$LINKER_SHIM")
 fi
 
@@ -342,23 +278,41 @@ MODULE_SYMVERS="$OUTDIR/Module.symvers"
 KMI_CHECK="$WORKDIR/py/kmi-check-6.x.py"
 
 echo "::group::[*] Generating config"
-make ${MAKE_ARGS[@]} "$KERNEL_DEFCONFIG"
+make ${MAKE_ARGS[@]} "$KERNEL_DEFCONFIG" || { error "make defconfig failed"; exit 1; }
+[ -f "$OUTDIR/.config" ] || { error "$OUTDIR/.config not generated"; exit 1; }
+
+if [ "$KSU" = "KSUN" ]; then
+  log "Validating KernelSU Next configuration"
+  for symbol in CONFIG_KSU CONFIG_KPROBES CONFIG_EXT4_FS; do
+    if ! grep -qx "${symbol}=y" "$OUTDIR/.config"; then
+      error "KernelSU Next requires ${symbol}=y in the final .config"
+      exit 1
+    fi
+  done
+  success "KernelSU Next root prerequisites are enabled"
+fi
 echo "::endgroup::"
 
 if susfs_included; then
 
   log "DEBUG: Checking defconfig for SUSFS"
-  grep -i susfs ./arch/arm64/configs/gki_defconfig || error "SUSFS NOT FOUND in defconfig!"
+  grep -qi susfs ./arch/arm64/configs/gki_defconfig || { error "SUSFS NOT FOUND in defconfig!"; exit 1; }
   echo ""
 
   log "DEBUG: Checking .config for SUSFS"
-  grep CONFIG_KSU_SUSFS $OUTDIR/.config || error "SUSFS NOT ENABLED in .config!"
-  grep CONFIG_KSU_SUSFS_SUS_MAP $OUTDIR/.config || error "SUSFS_SUS_MAP not enabled!"
+  grep -q CONFIG_KSU_SUSFS "$OUTDIR/.config" || { error "SUSFS NOT ENABLED in .config!"; exit 1; }
+  grep -q CONFIG_KSU_SUSFS_SUS_MAP "$OUTDIR/.config" || { error "SUSFS_SUS_MAP not enabled!"; exit 1; }
   echo ""
 
-  if grep -q "CONFIG_KSU_SUSFS" ./arch/arm64/configs/gki_defconfig && ! grep -q "CONFIG_KSU_SUSFS=y" $OUTDIR/.config; then
+  if grep -q "CONFIG_KSU_SUSFS" ./arch/arm64/configs/gki_defconfig && ! grep -q "CONFIG_KSU_SUSFS=y" "$OUTDIR/.config"; then
     warning "SUSFS in defconfig but not in .config - checking dependencies..."
-    grep "depends on" $(find . -name "Kconfig" -exec grep -l "KSU_SUSFS" {} \;) 2>/dev/null || error "No dependency info found"
+    mapfile -t _kconfigs < <(find . -name "Kconfig" -exec grep -l "KSU_SUSFS" {} + 2>/dev/null || true)
+    if [ ${#_kconfigs[@]} -eq 0 ]; then
+      error "SUSFS requested but no Kconfig with KSU_SUSFS found"
+      exit 1
+    fi
+    grep "depends on" "${_kconfigs[@]}" 2>/dev/null \
+      || warning "SUSFS requested but no 'depends on' entries found in Kconfig (may be default=y)"
   fi
 
 fi
@@ -370,7 +324,7 @@ if [ "$TEST" = "yes" ]; then
   exit 0
 fi
 
-if [[ $TODO == "defconfig" ]]; then
+if [[ "${TODO:-}" == "defconfig" ]]; then
   log "Copying defconfig"
   mkdir -p "$RELEASE_DIR"
   cp "$OUTDIR/.config" "$RELEASE_DIR/config-${VARIANT}.txt"
@@ -457,11 +411,15 @@ if [ -f /mnt/swapfile ]; then
 fi
 
 warning "Creating 32GB swap"
-sudo fallocate -l 32G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=32768 status=none
-sudo chmod 600 /swapfile
-sudo mkswap /swapfile
-sudo swapon /swapfile
-success "32GB swap created and activated"
+if sudo fallocate -l 32G /swapfile 2>/dev/null \
+   || sudo dd if=/dev/zero of=/swapfile bs=1M count=32768 status=none 2>/dev/null; then
+  sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile \
+    || { error "swap enable failed (chmod/mkswap/swapon)"; exit 1; }
+  success "32GB swap created and activated"
+else
+  error "failed to allocate 32GB swapfile (disk full?)"
+  exit 1
+fi
 
 sudo sysctl -w vm.swappiness=90
 sudo sysctl -w vm.vfs_cache_pressure=200
@@ -480,27 +438,30 @@ make ${MAKE_ARGS[@]} CC="ccache clang" CXX="ccache clang++"
 echo "::endgroup::"
 set +eo pipefail
 
-cd $WORKDIR
+cd "$WORKDIR" || { error "cd $WORKDIR failed (pre-anykernel)"; exit 1; }
 
 log "Cloning anykernel from $(simplify_gh_url "$ANYKERNEL_REPO")"
-git clone -q --depth=1 $ANYKERNEL_REPO anykernel
+rm -rf anykernel
+git clone -q --depth=1 "$ANYKERNEL_REPO" anykernel || { error "anykernel clone failed"; exit 1; }
 
 AK3_ZIP_NAME=${AK3_ZIP_NAME//REL/$RELEASE}
+[ -f "$WORKDIR/anykernel/anykernel.sh" ] || { error "anykernel.sh missing after clone"; exit 1; }
 sed -i \
-  -e "s/kernel.string=.*/kernel.string=${KERNEL_NAME} ${RELEASE} ${LINUX_VERSION} ${VARIANT} by Ahmed Al-Nassif (ahmed-alnassif)/g" \
+  -e "s/kernel.string=.*/kernel.string=${KERNEL_NAME} ${RELEASE} ${LINUX_VERSION} ${VARIANT} by slymnguner/g" \
   -e "s/supported_kernel=\".*\"/supported_kernel=\"${KERNEL_VERSION}\"/g" \
-  $WORKDIR/anykernel/anykernel.sh
+  "$WORKDIR/anykernel/anykernel.sh" || { error "anykernel.sh sed failed"; exit 1; }
 
-cd anykernel
+cd anykernel || { error "cd anykernel failed"; exit 1; }
 log "Zipping anykernel"
 if [ ! -f "$KERNEL_IMAGE" ];then
   error "$KERNEL_IMAGE not found."
   exit 1
 fi
-cp "$KERNEL_IMAGE" .
-zip -r9 "$WORKDIR/$AK3_ZIP_NAME" ./*
-cd $OLDPWD
+cp "$KERNEL_IMAGE" . || { error "cp Image to anykernel dir failed"; exit 1; }
+zip -r9 "$WORKDIR/$AK3_ZIP_NAME" ./* || { error "zip failed: $WORKDIR/$AK3_ZIP_NAME"; exit 1; }
+[ -f "$WORKDIR/$AK3_ZIP_NAME" ] || { error "zip produced no output: $WORKDIR/$AK3_ZIP_NAME"; exit 1; }
+cd "$WORKDIR" || { error "cd back failed"; exit 1; }
 
-echo "BASE_NAME=$KERNEL_NAME-$VARIANT" >> $GITHUB_ENV
-mkdir -p $RELEASE_DIR
-mv $WORKDIR/*.zip $RELEASE_DIR
+echo "BASE_NAME=$KERNEL_NAME-$VARIANT" >> "${GITHUB_ENV:-/dev/null}"
+mkdir -p "$RELEASE_DIR" || { error "mkdir $RELEASE_DIR failed"; exit 1; }
+mv "$WORKDIR/$AK3_ZIP_NAME" "$RELEASE_DIR/" || { error "failed to move $AK3_ZIP_NAME to $RELEASE_DIR"; exit 1; }

@@ -4,18 +4,16 @@
   <img src="docs/banner.png" alt="GKID Kernels Banner">
 </p>
 
-[![Build Status](https://github.com/ahmed-alnassif/GKID-Kernels/actions/workflows/build.yml/badge.svg)](https://github.com/ahmed-alnassif/GKID-Kernels/actions/workflows/build.yml)
-[![Latest Release](https://img.shields.io/github/v/release/ahmed-alnassif/GKID-Kernels?label=Latest%20Release&color=00aa00)](https://github.com/ahmed-alnassif/GKID-Kernels/releases)
-[![Downloads](https://img.shields.io/github/downloads/ahmed-alnassif/GKID-Kernels/total?label=Downloads&color=00aa00)](https://github.com/ahmed-alnassif/GKID-Kernels/releases)
-[![Group](https://img.shields.io/badge/Telegram-Group-blue.svg?logo=telegram)](https://t.me/ahmed_alnassif_tg)
-[![GitHub License](https://img.shields.io/github/license/ahmed-alnassif/GKID-Kernels?logo=gnu)](/LICENSE)
+[![Build Status](https://github.com/slymnguner/GKID-Kernels/actions/workflows/build.yml/badge.svg)](https://github.com/slymnguner/GKID-Kernels/actions/workflows/build.yml)
+[![Latest Release](https://img.shields.io/github/v/release/slymnguner/GKID-Kernels?label=Latest%20Release&color=00aa00)](https://github.com/slymnguner/GKID-Kernels/releases)
+[![Downloads](https://img.shields.io/github/downloads/slymnguner/GKID-Kernels/total?label=Downloads&color=00aa00)](https://github.com/slymnguner/GKID-Kernels/releases)
+[![GitHub License](https://img.shields.io/github/license/slymnguner/GKID-Kernels?logo=gnu)](/LICENSE)
 [![SuSFS](https://img.shields.io/badge/SuSFS-4CAF50?&logo=gitlab&logoColor=white)](https://gitlab.com/simonpunk/susfs4ksu)
 [![KernelSU](https://img.shields.io/badge/KernelSU-000000?&logo=github&logoColor=white)](https://github.com/tiann/KernelSU)
-[![KernelSU Next](https://img.shields.io/badge/KernelSU--Next-1976D2?&logo=github&logoColor=white)](https://github.com/KernelSU-Next/KernelSU-Next)
-[![ReSukiSU](https://img.shields.io/badge/ReSukiSU-E91E63?&logo=github&logoColor=white)](https://github.com/ReSukiSU/ReSukiSU)
-[![Managers](https://img.shields.io/badge/Managers-multiple-success)](https://github.com/ahmed-alnassif/GKID-Kernels/releases)
+[![KernelSU-Next](https://img.shields.io/badge/KernelSU--Next-E91E63?&logo=github&logoColor=white)](https://github.com/KernelSU-Next/KernelSU-Next)
+[![Managers](https://img.shields.io/badge/Managers-multiple-success)](https://github.com/slymnguner/GKID-Kernels/releases)
 
-**⚡ Blazing fast GKI kernel for Android** with KernelSU, SuSFS, NetHunter, NTSync, performance optimizations, battery improvements, and advanced security features.
+**⚡ Blazing fast GKI kernel for Android** with KernelSU-Next (KSUN), SuSFS, NetHunter, NTSync, performance optimizations, battery improvements, and advanced security features.
 
 ---
 
@@ -25,26 +23,11 @@
 
 ---
 
-## ❤️ Support This Project
-
-**USDT (TRC20):** `TCyghELuquAtoUFdY65iuJSMqJXbYhWidA`
-
-Your donations keep this project alive! I spend countless hours maintaining kernel builds for 5 different versions, fixing bugs, adding features, and supporting users. **Every donation matters!** 🙏
-
----
-
-## ✨ ReSuSFS 
-
-**[ReSuSFS](https://github.com/ahmed-alnassif/ReSuSFS)** – Root hiding made simple, powerful when you need it. A [KernelSU](https://kernelsu.org) module and WebUI that turns SuSFS into clean config files and toggle switches for everyday use, with **strong hiding applied out of the box** via built-in spoofing and hiding scripts for one-tap protection, plus a script manager for power users who want more, all without leaving the WebUI.
-
----
-
 ## ⚡ Quick Start
 
 1. **Check** your kernel version in Settings → About Phone
-2. **Download** matching variant from [Releases](https://github.com/ahmed-alnassif/GKID-Kernels/releases)
+2. **Download** matching variant from [Releases](https://github.com/slymnguner/GKID-Kernels/releases)
 3. **Flash** using KernelSU app or custom recovery
-4. **Manage** SuSFS with [ReSuSFS](https://github.com/ahmed-alnassif/ReSuSFS)
 
 ---
 
@@ -52,29 +35,20 @@ Your donations keep this project alive! I spend countless hours maintaining kern
 
 | Linux | Android |
 |-------|---------|
-| 5.10  | 12      |
-| 5.15  | 13      |
 | 6.1   | 14      |
-| 6.6   | 15      |
-| 6.12  | 16      |
 
 ---
 
 ## 🔧 Build Variants
 
-| Variant | Root | SuSFS | LTO | Compat |
-|---------|------|-------|-----|--------|
-| Vanilla | ❌ | ❌ | Full | ❌ |
-| Vanilla+NoLTO | ❌ | ❌ | None | ❌ |
-| KernelSU | ✅ | ❌ | Full | ❌ |
-| KernelSU+SuSFS | ✅ | ✅ | Full | ❌ |
-| KSU+SuSFS+MM | ✅ | ✅ | Full | ❌ |
-| KernelSU-Next | ✅ | ❌ | Full | ❌ |
-| KSU-Next+SuSFS | ✅ | ✅ | Full | ❌ |
-| ReSukiSU+SuSFS | ✅ | ✅ | Full | ❌ |
-| Compat+KSU+SuSFS | ✅ | ✅ | Full | ✅ |
-| Compat+KSU-Next+SuSFS | ✅ | ✅ | Full | ✅ |
-| Compat+LTO+KSU-Next+SuSFS | ✅ | ✅ | Full | ✅ |
+| Variant | Root | SuSFS | LTO | Compat | NoDS |
+|---------|------|-------|-----|--------|------|
+| KSUN | ✅ | ❌ | Full | ❌ | ❌ |
+| KSUN+SuSFS | ✅ | ✅ | Full | ❌ | ❌ |
+| Compat+KSUN | ✅ | ❌ | ❌ | ✅ | ❌ |
+| Compat+KSUN+SuSFS | ✅ | ✅ | ❌ | ✅ | ❌ |
+| Compat+NoDS+KSUN | ✅ | ❌ | ❌ | ✅ | ✅ |
+| Compat+NoDS+KSUN+SuSFS | ✅ | ✅ | ❌ | ✅ | ✅ |
 
 **Optional features** (enable on any variant):
 - 🐳 DroidSpaces - Linux userspace support
@@ -171,9 +145,7 @@ Your donations keep this project alive! I spend countless hours maintaining kern
 
 | Feature | Description |
 |---------|-------------|
-| **KernelSU** | Stable kernel-based root with excellent hiding |
-| **KernelSU-Next** | Community fork with bleeding-edge features |
-| **ReSukiSU** | ReSukiSU kernel integration |
+| **KernelSU-Next (KSUN)** | Next-gen kernel-based root with excellent hiding |
 | **Multiple Managers** | Run multiple KernelSU managers simultaneously |
 | **Vanilla** | No root for banking and corporate apps |
 
@@ -254,15 +226,13 @@ Separate KernelSU module containing wireless drivers and firmware when built as 
 
 **Use Compat if:**
 - You experience boot issues
-- Vendor modules fail to load
-- Device KMI mismatch
 - Standard variants don't boot
 
 ---
 
 ## 📥 Downloads
 
-**All releases:** [GitHub Releases](https://github.com/ahmed-alnassif/GKID-Kernels/releases)
+**All releases:** [GitHub Releases](https://github.com/slymnguner/GKID-Kernels/releases)
 
 **Each release includes:**
 - 📦 AnyKernel3 flashable packages
@@ -284,24 +254,14 @@ su -c "sysctl -w net.ipv4.tcp_congestion_control=westwood"
 su -c "sysctl -w net.ipv4.tcp_congestion_control=bbr"
 ```
 
-**Make permanent:** Create a script in `/data/adb/service.d/` with the sysctl command or use ReSuSFS.
+**Make permanent:** Create a script in `/data/adb/service.d/` with the sysctl command.
 
 ---
 
-## Other Ways to Help
+## 👤 Maintainer & Credits
 
-- **Star the Repository** ⭐ - Helps others discover this project
-- **Share** 📢 - Spread the word in your community or forums
-- **Report Issues** 🐛 - Found a bug? Open an issue with detailed logs
-- **Contribute** 🔧 - Pull requests, suggestions, and feedback are always welcome
-
----
-
-## 💬 Community
-
-- **Telegram:** [@ahmed_alnassif_tg](https://t.me/ahmed_alnassif_tg)
-- **Discussions:** [GitHub Discussions](https://github.com/ahmed-alnassif/GKID-Kernels/discussions)
-- **Issues:** [GitHub Issues](https://github.com/ahmed-alnassif/GKID-Kernels/issues)
+- Maintained by [slymnguner](https://github.com/slymnguner) - contact: slymngunermmx@gmail.com
+- Based on the GKID-Kernels project by Ahmed Al-Nassif, licensed under GPL-3.0. Original patch authorship is preserved in the `.patch` headers.
 
 ---
 
