@@ -306,12 +306,13 @@ if susfs_included; then
 
   if grep -q "CONFIG_KSU_SUSFS" ./arch/arm64/configs/gki_defconfig && ! grep -q "CONFIG_KSU_SUSFS=y" "$OUTDIR/.config"; then
     warning "SUSFS in defconfig but not in .config - checking dependencies..."
-    _kconfigs=$(find . -name "Kconfig" -exec grep -l "KSU_SUSFS" {} + 2>/dev/null || true)
-    if [ -z "$_kconfigs" ]; then
+    mapfile -t _kconfigs < <(find . -name "Kconfig" -exec grep -l "KSU_SUSFS" {} + 2>/dev/null || true)
+    if [ ${#_kconfigs[@]} -eq 0 ]; then
       error "SUSFS requested but no Kconfig with KSU_SUSFS found"
       exit 1
     fi
-    grep "depends on" $_kconfigs 2>/dev/null || { error "SUSFS requested but dependencies missing in Kconfig"; exit 1; }
+    grep "depends on" "${_kconfigs[@]}" 2>/dev/null \
+      || warning "SUSFS requested but no 'depends on' entries found in Kconfig (may be default=y)"
   fi
 
 fi
