@@ -187,112 +187,6 @@ apply_patch_file() {
     fi
 }
 
-apply_kernel_patches() {
-    local patch_dir="${1:-$KERNEL_PATCHES/common}"
-    local failed=0
-
-    [[ ! -d "$patch_dir" ]] && { error "$patch_dir not found"; return 1; }
-
-    local patches=()
-    while IFS= read -r -d '' patch; do
-        patches+=("$patch")
-    done < <(find "$patch_dir" -type f \( -name "*.patch" -o -name "*.diff" \) -print0 | sort -z -V)
-
-    [[ ${#patches[@]} -eq 0 ]] && { warning "No patches found in $patch_dir"; return 0; }
-
-    info "Found ${#patches[@]} patches in $patch_dir"
-
-    for patch in "${patches[@]}"; do
-        if ! apply_patch_file "$patch"; then
-            ((failed++))
-        fi
-    done
-
-    [[ $failed -eq 0 ]] && success "All patches applied successfully" || warning "Applied $((${#patches[@]} - failed))/${#patches[@]} patches, $failed failed"
-    return $failed
-}
-
-apply_force_load_module_patch() {
-    local file=""
-
-    if [[ -f "kernel/module/version.c" ]]; then
-        file="kernel/module/version.c"
-    elif [[ -f "kernel/module.c" ]]; then
-        file="kernel/module.c"
-    else
-        warning "Module file not found - skipping force load patch"
-        return 0
-    fi
-
-    if grep -q "disagrees about version of symbol.*but ignore" "$file"; then
-        success "Force load module patch already applied"
-        return 0
-    fi
-
-    python3 - "$file" <<'PYEOF'
-import re
-import sys
-
-path = sys.argv[1]
-
-with open(path, "r") as f:
-    content = f.read()
-
-# Match the specific pr_warn(...) + return 0; pair from check_version()'s
-# bad_version label. This string is unique to that function on both 5.10
-# (kernel/module.c) and 6.1+ (kernel/module/version.c).
-pattern = re.compile(
-    r'(pr_warn\("%s: disagrees about version of symbol %s\\n",\s*'
-    r'\n?\s*info->name, symname\);\s*\n\s*)return 0;'
-)
-
-def repl(m):
-    prefix = m.group(1).replace(
-        'disagrees about version of symbol %s\\n"',
-        'disagrees about version of symbol %s, but ignore...\\n"',
-    )
-    return prefix + "return 1;"
-
-new_content, n = pattern.subn(repl, content, count=1)
-
-if n == 0:
-    print("PATCH_PATTERN_NOT_FOUND", file=sys.stderr)
-    sys.exit(1)
-
-with open(path, "w") as f:
-    f.write(new_content)
-PYEOF
-
-    if [[ $? -eq 0 ]]; then
-        success "Force load module patch applied to $file"
-    else
-        warning "Force load module patch pattern not found in $file (source may differ from expected) - skipping"
-        return 1
-    fi
-}
-
-apply_extract_cert_key_pass_patch() {
-    local file="certs/extract-cert.c"
-
-    if [[ ! -f "$file" ]]; then
-        warning "extract-cert.c not found - skipping key_pass patch"
-        return 0
-    fi
-
-    if grep -q "ifdef USE_PKCS11_ENGINE" "$file" && grep -qB2 "static const char \*key_pass;" "$file" | grep -q "ifdef USE_PKCS11_ENGINE"; then
-        success "extract-cert key_pass patch already applied"
-        return 0
-    fi
-
-    sed -i '/^static const char \*key_pass;/i #ifdef USE_PKCS11_ENGINE' "$file"
-    sed -i '/^static const char \*key_pass;/a #endif' "$file"
-
-    sed -i 's/^\([[:space:]]*\)if (key_pass)$/\1#ifdef USE_PKCS11_ENGINE\n\1if (key_pass)/' "$file"
-    sed -i '/ERR(!ENGINE_ctrl_cmd_string(e, "PIN", key_pass, 0), "Set PKCS#11 PIN");/a #endif' "$file"
-
-    success "extract-cert key_pass patch applied via sed"
-}
-
 fix_task_mmu_corruption() {
     local file="fs/proc/task_mmu.c"
     local patch="$KERNEL_PATCHES/susfs/0001-fix-sync-task_mmu.c-SuSFS-patch-with-upstream.patch"
@@ -324,23 +218,6 @@ fix_namespace_susfs_mount() {
     sed -i '/#include "internal.h"/a \\n#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT\nextern bool susfs_is_current_ksu_domain(void);\nextern struct static_key_true susfs_is_sdcard_android_data_not_decrypted;\n\n#define CL_COPY_MNT_NS BIT(25)\n\n#endif' "$file"
 
     success "namespace.c SuSFS mount definitions added via sed"
-}
-
-cleanup_abi_gki_protected_exports() {
-    local files_found=0
-
-    for path in "android" "."; do
-        if [[ -d "$path" ]] && compgen -G "$path/*protected_exports*" > /dev/null; then
-            rm -rf "$path"/*protected_exports*
-            files_found=1
-        fi
-    done
-
-    if [[ $files_found -eq 0 ]]; then
-        success "No ABI GKI protected exports files found to remove"
-    else
-        success "Removed ABI GKI protected exports file(s)"
-    fi
 }
 
 build_and_install_pahole() {

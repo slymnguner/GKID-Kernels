@@ -145,13 +145,6 @@ echo "::endgroup::"
 
 echo "::group::[+] Applied patches"
 
-if ! kernel_version_eq "$KERNEL_VERSION" "6.1"; then
-  apply_kernel_patches
-  apply_force_load_module_patch
-  apply_extract_cert_key_pass_patch
-  cleanup_abi_gki_protected_exports
-fi
-
 
 log "Applying BBRv3 patch"
 apply_patch_file $KERNEL_PATCHES/bbrv3/bbrv3.patch
