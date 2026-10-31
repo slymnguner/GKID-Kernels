@@ -175,41 +175,27 @@ apply_patch_file() {
 
     [[ -z "$patch_data" ]] && { error "No patch data"; return 1; }
 
-    local _pname
-    _pname=$(basename "$patch" 2>/dev/null || echo "stdin")
-
-    # LAYER 1: Reverse-check → patch already applied?
-    if echo "$patch_data" | git apply -R --check - 2>/dev/null; then
-        warning "Already applied (reverse-check OK), skipping: $_pname"
-        return 0
-    fi
-
-    # LAYER 2: Normal git apply
     if echo "$patch_data" | git apply --check - 2>/dev/null; then
         if echo "$patch_data" | git apply - 2>/dev/null; then
-            success "Applied: $_pname"
+            success "Applied patch successfully"
             return 0
         fi
     fi
 
-    # LAYER 3: patch -N forward mode (skips already-applied silently)
-    if echo "$patch_data" | patch -p1 -N --fuzz=3 --dry-run 2>/dev/null; then
-        if echo "$patch_data" | patch -p1 -N --fuzz=3 2>/dev/null; then
-            success "Applied with fuzz (forward mode): $_pname"
-            return 0
-        fi
+    warning "git apply failed, trying patch with fuzz"
+
+    if ! echo "$patch_data" | patch -p1 --fuzz=3 --dry-run 2>/dev/null; then
+        warning "Skipping: patch does not apply"
+        return 1
     fi
 
-    # LAYER 4: Detect "already applied" via patch output
-    local _patch_out
-    _patch_out=$(echo "$patch_data" | patch -p1 -N --fuzz=3 --dry-run 2>&1 || true)
-    if echo "$_patch_out" | grep -qiE "already applied|previously applied|Reversed"; then
-        warning "Already applied (patch detection), skipping: $_pname"
+    if echo "$patch_data" | patch -p1 --fuzz=3 2>/dev/null; then
+        success "Applied patch with fuzz"
         return 0
+    else
+        error "Failed to apply patch"
+        return 1
     fi
-
-    error "Failed to apply: $_pname"
-    return 1
 }
 
 build_and_install_pahole() {
