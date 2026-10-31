@@ -114,28 +114,6 @@ apply_ntsync_compat_patch() {
   fi
 }
 
-install_ksu() {
-  local REPO="$1"
-  local REF="$2"
-  local URL
-
-  if [ -z "$REPO" ] || [ -z "$REF" ]; then
-    echo "Usage: install_ksu <user/repo> <ref>"
-    exit 1
-  fi
-
-  URL="https://raw.githubusercontent.com/$REPO/$REF/kernel/setup.sh"
-  log "Installing KernelSU from $REPO | $REF"
-  curl -LSs "$URL" | bash -s "$REF"
-}
-
-ksu_included() {
-  case "$KSU" in
-    KSU|KSUN|SKSU|BSU) return 0 ;;
-    *) return 1 ;;
-  esac
-}
-
 susfs_included() {
   [ "$KSU_SUSFS" == "true" ]
   return $?
