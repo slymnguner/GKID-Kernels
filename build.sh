@@ -36,15 +36,11 @@ if [ "$No_DS" = "true" ]; then
 fi
 # ----------------------------------------------------------------------
 
-if kernel_version_eq "$KERNEL_VERSION" "6.1"; then
-  KERNEL_REPO="${KERNEL_REPO:-https://github.com/slymnguner/GKI-Duchamp-6.1}"
-  if [ "$NH" = "true" ]; then
-    KERNEL_BRANCH="GKID-NH"
-  else
-    KERNEL_BRANCH="GKID-6.1"
-  fi
+KERNEL_REPO="${KERNEL_REPO:-https://github.com/slymnguner/GKI-Duchamp-6.1}"
+if [ "$NH" = "true" ]; then
+  KERNEL_BRANCH="GKID-NH"
 else
-  IFS='|' read -r KERNEL_REPO KERNEL_BRANCH KERNEL_KMI <<< "$(resolve_kernel_source "$KERNEL_VERSION")"
+  KERNEL_BRANCH="GKID-6.1"
 fi
 
 ANDROID_RELEASE="$(android_release_for_version "$KERNEL_VERSION")"
