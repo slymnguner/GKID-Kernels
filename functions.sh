@@ -49,7 +49,9 @@ simplify_gh_url() {
 }
 
 config() {
-  $KSRC/scripts/config --file $DEFCONFIG_FILE "$@"
+  [ -n "${KSRC:-}" ] || { error "KSRC unset, cannot run config"; return 1; }
+  [ -f "${DEFCONFIG_FILE:-}" ] || { error "DEFCONFIG_FILE unset or missing: '${DEFCONFIG_FILE:-}'"; return 1; }
+  "$KSRC/scripts/config" --file "$DEFCONFIG_FILE" "$@"
 }
 
 log() {
@@ -106,15 +108,28 @@ bash() {
 }
 
 git() {
-    local cmd="$1"
-    shift
-
+    local args=("$@")
+    local idx=0
+    while [ $idx -lt ${#args[@]} ]; do
+        case "${args[$idx]}" in
+            -C|-c|--git-dir|--work-tree|--exec-path|--namespace|--config-env)
+                idx=$((idx+2))
+                ;;
+            -*)
+                idx=$((idx+1))
+                ;;
+            *)
+                break
+                ;;
+        esac
+    done
+    local cmd="${args[$idx]:-}"
     case "$cmd" in
         clone|fetch|pull|push|ls-remote|submodule)
-            retry command git "$cmd" "$@"
+            retry command git "${args[@]}"
             ;;
         *)
-            command git "$cmd" "$@"
+            command git "${args[@]}"
             ;;
     esac
 }
@@ -136,12 +151,13 @@ apply_patch_file() {
     local patch="$1"
     local patch_data=""
 
-    if [[ -n "$patch" && -f "$patch" ]]; then
+    if [[ -n "$patch" ]]; then
+        if [[ ! -f "$patch" ]]; then
+            error "patch file not found: $patch"
+            return 1
+        fi
         patch_data=$(cat "$patch")
         info "Applying: $(basename "$patch")"
-    elif [[ -n "$patch" ]]; then
-        patch_data="$patch"
-        info "Applying patch from data"
     else
         patch_data=$(cat)
         info "Applying patch from stdin"
@@ -213,8 +229,14 @@ build_and_install_pahole() {
             return 1
         }
     else
-        git -C "$pahole_dir" fetch --depth=1 origin master
-        git -C "$pahole_dir" reset --hard origin/master
+        git -C "$pahole_dir" fetch --depth=1 origin master || {
+            error "failed to fetch pahole updates"
+            return 1
+        }
+        git -C "$pahole_dir" reset --hard origin/master || {
+            error "failed to reset pahole to origin/master"
+            return 1
+        }
     fi
 
     local build_dir="$pahole_dir/build"
@@ -267,8 +289,10 @@ build_and_install_pahole() {
 apply_susfs_patches() {
     log "Applying SUSFS patches"
 
-    cp -R $SUSFS_PATCHES/fs/* ./fs
-    cp -R $SUSFS_PATCHES/include/linux/* ./include/linux/
+    [ -d "$SUSFS_PATCHES/fs" ] || { error "SUSFS fs patch dir missing: $SUSFS_PATCHES/fs"; return 1; }
+    [ -d "$SUSFS_PATCHES/include/linux" ] || { error "SUSFS include patch dir missing: $SUSFS_PATCHES/include/linux"; return 1; }
+    cp -R "$SUSFS_PATCHES/fs/." ./fs/ || { error "failed to copy SUSFS fs patches"; return 1; }
+    cp -R "$SUSFS_PATCHES/include/linux/." ./include/linux/ || { error "failed to copy SUSFS include patches"; return 1; }
 
     if [ "$SUSFS_PATCH" = "gki-android14-6.1" ]; then
       cd $SUSFS_DIR
@@ -282,7 +306,7 @@ apply_susfs_patches() {
     fi
 
     SUSFS_VERSION=$(grep -E '^#define SUSFS_VERSION' ./include/linux/susfs.h | cut -d' ' -f3 | sed 's/"//g')
-    echo "SUSFS_VERSION=$SUSFS_VERSION" >> $GITHUB_ENV
+    echo "SUSFS_VERSION=$SUSFS_VERSION" >> "${GITHUB_ENV:-/dev/null}"
 }
 
 clone_susfs() {
@@ -292,10 +316,16 @@ clone_susfs() {
     if [ ! -d "$SUSFS_DIR" ]; then
         if [ -n "$pin" ]; then
             log "Cloning $SUSFS_URL (branch $SUSFS_BRANCH) to pin commit $pin"
-            git clone -q --single-branch -b "$SUSFS_BRANCH" "$SUSFS_URL" "$SUSFS_DIR"
+            git clone -q --single-branch -b "$SUSFS_BRANCH" "$SUSFS_URL" "$SUSFS_DIR" || {
+                error "susfs clone failed: $SUSFS_URL ($SUSFS_BRANCH)"
+                return 1
+            }
         else
             log "Cloning $SUSFS_URL (branch $SUSFS_BRANCH, depth $DEPTH, no pin)"
-            git clone --depth=$DEPTH -q "$SUSFS_URL" -b "$SUSFS_BRANCH" "$SUSFS_DIR"
+            git clone --depth=$DEPTH -q "$SUSFS_URL" -b "$SUSFS_BRANCH" "$SUSFS_DIR" || {
+                error "susfs clone failed: $SUSFS_URL ($SUSFS_BRANCH)"
+                return 1
+            }
         fi
     else
         log "$SUSFS_DIR already exists, reusing existing clone"

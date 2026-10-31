@@ -44,15 +44,15 @@ else
 fi
 
 ANDROID_RELEASE="$(android_release_for_version "$KERNEL_VERSION")"
-echo "KERNEL_VERSION=$KERNEL_VERSION" >> $GITHUB_ENV
-echo "ANDROID_RELEASE=$ANDROID_RELEASE" >> $GITHUB_ENV
-echo "KERNEL_SOURCE_REPO=$(simplify_gh_url "$KERNEL_REPO")" >> $GITHUB_ENV
-echo "KERNEL_SOURCE_BRANCH=$KERNEL_BRANCH" >> $GITHUB_ENV
+echo "KERNEL_VERSION=$KERNEL_VERSION" >> "${GITHUB_ENV:-/dev/null}"
+echo "ANDROID_RELEASE=$ANDROID_RELEASE" >> "${GITHUB_ENV:-/dev/null}"
+echo "KERNEL_SOURCE_REPO=$(simplify_gh_url "$KERNEL_REPO")" >> "${GITHUB_ENV:-/dev/null}"
+echo "KERNEL_SOURCE_BRANCH=$KERNEL_BRANCH" >> "${GITHUB_ENV:-/dev/null}"
 
-echo "RELEASE_REPO=$(simplify_gh_url "$GKI_RELEASES_REPO")" >> $GITHUB_ENV
-echo "KERNEL_NAME=${KERNEL_NAME}${RUN_NUM}" >> $GITHUB_ENV
-echo "RELEASE_NAME=$KERNEL_NAME $RELEASE" >> $GITHUB_ENV
-echo "RELEASE=$RELEASE" >> $GITHUB_ENV
+echo "RELEASE_REPO=$(simplify_gh_url "$GKI_RELEASES_REPO")" >> "${GITHUB_ENV:-/dev/null}"
+echo "KERNEL_NAME=${KERNEL_NAME}${RUN_NUM}" >> "${GITHUB_ENV:-/dev/null}"
+echo "RELEASE_NAME=$KERNEL_NAME $RELEASE" >> "${GITHUB_ENV:-/dev/null}"
+echo "RELEASE=$RELEASE" >> "${GITHUB_ENV:-/dev/null}"
 
 BUILD_LOGS="$RELEASE_DIR/build.log"
 exec > >(tee -a "$BUILD_LOGS") 2>&1
@@ -64,16 +64,18 @@ trap 'echo "[-] Received SIGINT at $(date)" >> "$BUILD_LOGS"' INT
 
 log "Cloning kernel source from $(simplify_gh_url "$KERNEL_REPO")"
 if kernel_version_eq "$KERNEL_VERSION" "6.1"; then
-  git clone -q --depth=1 --recurse-submodules "$KERNEL_REPO" -b "$KERNEL_BRANCH" "$KSRC"
+  git clone -q --depth=1 --recurse-submodules "$KERNEL_REPO" -b "$KERNEL_BRANCH" "$KSRC" || { error "kernel clone failed: $KERNEL_REPO ($KERNEL_BRANCH)"; exit 1; }
 else
-  git clone -q --depth=1 "$KERNEL_REPO" -b "$KERNEL_BRANCH" "$KSRC"
+  git clone -q --depth=1 "$KERNEL_REPO" -b "$KERNEL_BRANCH" "$KSRC" || { error "kernel clone failed: $KERNEL_REPO ($KERNEL_BRANCH)"; exit 1; }
 fi
 
 cd $KSRC
-LINUX_VERSION=$(make kernelversion)
-DEFCONFIG_FILE=$(find ./arch/arm64/configs -name "$KERNEL_DEFCONFIG")
-echo "LINUX_VERSION=$LINUX_VERSION" >> $GITHUB_ENV
-cd $WORKDIR
+LINUX_VERSION=$(make kernelversion) || { error "make kernelversion failed"; exit 1; }
+[ -n "$LINUX_VERSION" ] || { error "empty LINUX_VERSION"; exit 1; }
+DEFCONFIG_FILE=$(find ./arch/arm64/configs -name "$KERNEL_DEFCONFIG" -print -quit)
+[ -n "$DEFCONFIG_FILE" ] || { error "defconfig '$KERNEL_DEFCONFIG' not found under arch/arm64/configs"; exit 1; }
+echo "LINUX_VERSION=$LINUX_VERSION" >> "${GITHUB_ENV:-/dev/null}"
+cd "$WORKDIR" || { error "cd \$WORKDIR failed"; exit 1; }
 
 log "Setting Kernel variant"
 case "$KSU" in
@@ -104,8 +106,10 @@ echo "::group::[*] Downloading Clang"
 CLANG_BIN="$WORKDIR/neutron-clang/bin"
 mkdir -p "$WORKDIR/neutron-clang"
 cd "$WORKDIR/neutron-clang"
-bash <(curl -s "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman") -S
-cd $OLDPWD
+_antman_script=$(curl -fsSL "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman") || { error "antman download failed"; exit 1; }
+[ -n "$_antman_script" ] || { error "antman script empty"; exit 1; }
+bash <<<"$_antman_script" -S || { error "antman execution failed"; exit 1; }
+cd "$WORKDIR" || { error "cd \$WORKDIR failed"; exit 1; }
 if [ ! -d "$CLANG_BIN" ]; then
     error "Clang not found in ${CLANG_BIN}."
     exit 1
@@ -129,32 +133,39 @@ ccache --set-config=base_dir="$WORKDIR"
 ccache --set-config=compiler_check=content
 
 COMPILER_STRING=$(clang -v 2>&1 | head -n 1 | sed 's/(https..*//' | sed 's/ version//')
-echo "COMPILER_STRING=$COMPILER_STRING" >> $GITHUB_ENV
+echo "COMPILER_STRING=$COMPILER_STRING" >> "${GITHUB_ENV:-/dev/null}"
 
 cd $KSRC
 
 echo "::group::[+] pahole installation"
-build_and_install_pahole
+build_and_install_pahole || { error "pahole install failed"; exit 1; }
 echo "::endgroup::"
 
 echo "::group::[+] Applied patches"
 
 
 log "Applying BBRv3 patch"
-apply_patch_file $KERNEL_PATCHES/bbrv3/bbrv3.patch
+apply_patch_file "$KERNEL_PATCHES/bbrv3/bbrv3.patch" || { error "BBRv3 patch failed"; exit 1; }
 
 
 if kernel_version_lt "$KERNEL_VERSION" "6.12"; then
   log "Applying NTSync patches..."
-  curl -LSs "https://github.com/WildKernels/kernel_patches/raw/main/common/ntsync/ntsync_base.patch" | apply_patch_file
+  _ntsync_base=$(curl -fLSs "https://github.com/WildKernels/kernel_patches/raw/main/common/ntsync/ntsync_base.patch") || { error "ntsync_base download failed"; exit 1; }
+  [ -n "$_ntsync_base" ] || { error "ntsync_base patch empty"; exit 1; }
+  printf '%s' "$_ntsync_base" | apply_patch_file || { error "ntsync_base apply failed"; exit 1; }
 
-  curl -LSs "https://github.com/WildKernels/kernel_patches/raw/main/common/ntsync/ntsync_compat_android14-6.1.patch" | apply_patch_file
+  _ntsync_compat=$(curl -fLSs "https://github.com/WildKernels/kernel_patches/raw/main/common/ntsync/ntsync_compat_android14-6.1.patch") || { error "ntsync_compat download failed"; exit 1; }
+  [ -n "$_ntsync_compat" ] || { error "ntsync_compat patch empty"; exit 1; }
+  printf '%s' "$_ntsync_compat" | apply_patch_file || { error "ntsync_compat apply failed"; exit 1; }
   success "NTSync patches applied"
 fi
 
 log "BBG included"
-wget -qO- "https://github.com/vc-teahouse/Baseband-guard/raw/main/setup.sh" | bash
-sed -i '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ { /baseband_guard/! s/selinux/selinux,baseband_guard/ } }' "security/Kconfig"
+_bbg_script=$(wget -qO- "https://github.com/vc-teahouse/Baseband-guard/raw/main/setup.sh") || { error "BBG setup.sh download failed"; exit 1; }
+[ -n "$_bbg_script" ] || { error "BBG setup.sh empty"; exit 1; }
+bash <<<"$_bbg_script" || { error "BBG setup.sh execution failed"; exit 1; }
+[ -f "security/Kconfig" ] || { error "security/Kconfig missing after BBG"; exit 1; }
+sed -i '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ { /baseband_guard/! s/selinux/selinux,baseband_guard/ } }' "security/Kconfig" || { error "BBG Kconfig sed failed"; exit 1; }
 
 if [ "$No_DS" = "true" ]; then
   VARIANT+="+NoDS"
@@ -162,7 +173,7 @@ fi
 
 if [ "$DROIDSPACES" = "true" ] || [ "$NH" = "true" ]; then
   log "Applying DroidSpaces/NetHunter sysvipc patch"
-  apply_patch_file "$KERNEL_PATCHES/droidspaces/001.GKI-below-6.12-fix_sysvipc_kabi_6_7_8.patch"
+  apply_patch_file "$KERNEL_PATCHES/droidspaces/001.GKI-below-6.12-fix_sysvipc_kabi_6_7_8.patch" || { error "DroidSpaces sysvipc patch failed"; exit 1; }
 fi
 
 set -eo pipefail
@@ -189,11 +200,13 @@ if [ "$KSU_COMPAT" = "true" ]; then
   VARIANT="Compat+NoLTO+${VARIANT}"
 fi
 
-echo "VARIANT=$VARIANT" >> $GITHUB_ENV
+echo "VARIANT=$VARIANT" >> "${GITHUB_ENV:-/dev/null}"
 
 if [ "$NM" = "true" ]; then
   log "Applying NoMount"
-  curl "https://raw.githubusercontent.com/maxsteeel/nomount/refs/heads/dev/kernel/setup.sh" | bash -s master
+  _nomount_script=$(curl -fLSs "https://raw.githubusercontent.com/maxsteeel/nomount/refs/heads/dev/kernel/setup.sh") || { error "NoMount download failed"; exit 1; }
+  [ -n "$_nomount_script" ] || { error "NoMount setup.sh empty"; exit 1; }
+  bash <<<"$_nomount_script" -s master || { error "NoMount setup failed"; exit 1; }
 fi
 echo "::endgroup::"
 set +eo pipefail
@@ -202,7 +215,8 @@ AK3_ZIP_NAME=${AK3_ZIP_NAME//KVER/$LINUX_VERSION}
 AK3_ZIP_NAME=${AK3_ZIP_NAME//VARIANT/$VARIANT}
 
 log "Applying configs..."
-source "$WORKDIR/configs/gki_defconfig.sh"
+[ -f "$WORKDIR/configs/gki_defconfig.sh" ] || { error "configs/gki_defconfig.sh missing"; exit 1; }
+source "$WORKDIR/configs/gki_defconfig.sh" || { error "sourcing gki_defconfig.sh failed"; exit 1; }
 
 if [ "${TODO:-kernel}" = "kernel" ]; then
   LATEST_COMMIT_HASH=$(git rev-parse --short HEAD)
@@ -252,7 +266,8 @@ MODULE_SYMVERS="$OUTDIR/Module.symvers"
 KMI_CHECK="$WORKDIR/py/kmi-check-6.x.py"
 
 echo "::group::[*] Generating config"
-make ${MAKE_ARGS[@]} "$KERNEL_DEFCONFIG"
+make ${MAKE_ARGS[@]} "$KERNEL_DEFCONFIG" || { error "make defconfig failed"; exit 1; }
+[ -f "$OUTDIR/.config" ] || { error "$OUTDIR/.config not generated"; exit 1; }
 
 if [ "$KSU" = "KSUN" ]; then
   log "Validating KernelSU Next configuration"
@@ -269,17 +284,17 @@ echo "::endgroup::"
 if susfs_included; then
 
   log "DEBUG: Checking defconfig for SUSFS"
-  grep -i susfs ./arch/arm64/configs/gki_defconfig || error "SUSFS NOT FOUND in defconfig!"
+  grep -qi susfs ./arch/arm64/configs/gki_defconfig || { error "SUSFS NOT FOUND in defconfig!"; exit 1; }
   echo ""
 
   log "DEBUG: Checking .config for SUSFS"
-  grep CONFIG_KSU_SUSFS $OUTDIR/.config || error "SUSFS NOT ENABLED in .config!"
-  grep CONFIG_KSU_SUSFS_SUS_MAP $OUTDIR/.config || error "SUSFS_SUS_MAP not enabled!"
+  grep -q CONFIG_KSU_SUSFS "$OUTDIR/.config" || { error "SUSFS NOT ENABLED in .config!"; exit 1; }
+  grep -q CONFIG_KSU_SUSFS_SUS_MAP "$OUTDIR/.config" || { error "SUSFS_SUS_MAP not enabled!"; exit 1; }
   echo ""
 
-  if grep -q "CONFIG_KSU_SUSFS" ./arch/arm64/configs/gki_defconfig && ! grep -q "CONFIG_KSU_SUSFS=y" $OUTDIR/.config; then
+  if grep -q "CONFIG_KSU_SUSFS" ./arch/arm64/configs/gki_defconfig && ! grep -q "CONFIG_KSU_SUSFS=y" "$OUTDIR/.config"; then
     warning "SUSFS in defconfig but not in .config - checking dependencies..."
-    grep "depends on" $(find . -name "Kconfig" -exec grep -l "KSU_SUSFS" {} \;) 2>/dev/null || error "No dependency info found"
+    grep "depends on" $(find . -name "Kconfig" -exec grep -l "KSU_SUSFS" {} \;) 2>/dev/null || { error "SUSFS requested but dependencies missing in Kconfig"; exit 1; }
   fi
 
 fi
@@ -404,15 +419,17 @@ set +eo pipefail
 cd $WORKDIR
 
 log "Cloning anykernel from $(simplify_gh_url "$ANYKERNEL_REPO")"
-git clone -q --depth=1 $ANYKERNEL_REPO anykernel
+rm -rf anykernel
+git clone -q --depth=1 "$ANYKERNEL_REPO" anykernel || { error "anykernel clone failed"; exit 1; }
 
 AK3_ZIP_NAME=${AK3_ZIP_NAME//REL/$RELEASE}
+[ -f "$WORKDIR/anykernel/anykernel.sh" ] || { error "anykernel.sh missing after clone"; exit 1; }
 sed -i \
   -e "s/kernel.string=.*/kernel.string=${KERNEL_NAME} ${RELEASE} ${LINUX_VERSION} ${VARIANT} by slymnguner/g" \
   -e "s/supported_kernel=\".*\"/supported_kernel=\"${KERNEL_VERSION}\"/g" \
-  $WORKDIR/anykernel/anykernel.sh
+  "$WORKDIR/anykernel/anykernel.sh" || { error "anykernel.sh sed failed"; exit 1; }
 
-cd anykernel
+cd anykernel || { error "cd anykernel failed"; exit 1; }
 log "Zipping anykernel"
 if [ ! -f "$KERNEL_IMAGE" ];then
   error "$KERNEL_IMAGE not found."
@@ -421,8 +438,8 @@ fi
 cp "$KERNEL_IMAGE" .
 zip -r9 "$WORKDIR/$AK3_ZIP_NAME" ./* || { error "zip failed: $WORKDIR/$AK3_ZIP_NAME"; exit 1; }
 [ -f "$WORKDIR/$AK3_ZIP_NAME" ] || { error "zip produced no output: $WORKDIR/$AK3_ZIP_NAME"; exit 1; }
-cd $OLDPWD
+cd "$WORKDIR" || { error "cd back failed"; exit 1; }
 
-echo "BASE_NAME=$KERNEL_NAME-$VARIANT" >> $GITHUB_ENV
-mkdir -p $RELEASE_DIR
-mv $WORKDIR/*.zip $RELEASE_DIR
+echo "BASE_NAME=$KERNEL_NAME-$VARIANT" >> "${GITHUB_ENV:-/dev/null}"
+mkdir -p "$RELEASE_DIR"
+mv "$WORKDIR/$AK3_ZIP_NAME" "$RELEASE_DIR/" || { error "failed to move $AK3_ZIP_NAME to $RELEASE_DIR"; exit 1; }

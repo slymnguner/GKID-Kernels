@@ -66,18 +66,18 @@ def resolve_kernel_versions() -> List[str]:
 def generate_matrix() -> Dict[str, List[Dict[str, Any]]]:
 	variant_entries = []
 
+	# Warn on unknown BUILD_* flags that are set to true (independent of variant selection)
+	for env_name in os.environ:
+		if env_name.startswith("BUILD_") and env_name not in BUILD_CONFIGS:
+			if get_env_bool(env_name):
+				print(
+					f"::warning::Unknown build flag {env_name}=true (ignored)",
+					file=sys.stderr,
+				)
+
 	for env_var, configs in BUILD_CONFIGS.items():
 		if get_env_bool(env_var):
 			variant_entries.extend(configs)
-
-			# Warn on unknown BUILD_* flags that are set to true
-			for env_name in os.environ:
-				if env_name.startswith("BUILD_") and env_name not in BUILD_CONFIGS:
-					if get_env_bool(env_name):
-						print(
-							f"::warning::Unknown build flag {env_name}=true (ignored)",
-							file=sys.stderr,
-						)
 
 	if not variant_entries:
 		raise ValueError(
