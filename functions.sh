@@ -187,39 +187,6 @@ apply_patch_file() {
     fi
 }
 
-fix_task_mmu_corruption() {
-    local file="fs/proc/task_mmu.c"
-    local patch="$KERNEL_PATCHES/susfs/0001-fix-sync-task_mmu.c-SuSFS-patch-with-upstream.patch"
-
-    if [[ ! -f "$file" ]]; then
-        warning "task_mmu.c not found, skipping fix"
-        return 0
-    fi
-
-    git checkout -- "$file"
-    apply_patch_file "$patch"
-}
-
-fix_namespace_susfs_mount() {
-    local file="fs/namespace.c"
-
-    if [[ ! -f "$file" ]]; then
-        warning "namespace.c not found - skipping fix"
-        return 0
-    fi
-
-    if grep -q "#define CL_COPY_MNT_NS" "$file" && grep -q "extern struct static_key_true susfs_is_sdcard_android_data_not_decrypted" "$file"; then
-        success "namespace.c SuSFS mount definitions already applied"
-        return 0
-    fi
-
-    sed -i '/#include <linux\/mnt_idmapping.h>/a #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT\n#include <linux/susfs_def.h>\n#endif' "$file"
-
-    sed -i '/#include "internal.h"/a \\n#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT\nextern bool susfs_is_current_ksu_domain(void);\nextern struct static_key_true susfs_is_sdcard_android_data_not_decrypted;\n\n#define CL_COPY_MNT_NS BIT(25)\n\n#endif' "$file"
-
-    success "namespace.c SuSFS mount definitions added via sed"
-}
-
 build_and_install_pahole() {
     local pahole_dir="$HOME/.local/src/pahole"
     local install_prefix="$HOME/.local"
@@ -325,16 +292,8 @@ apply_susfs_patches() {
     fi
 
     if ! patch -p1 --fuzz=3 < "$SUSFS_PATCHES/50_add_susfs_in_${SUSFS_PATCH}.patch"; then
-        if [ "$KERNEL_KMI" = "android13-5.15" ]; then
-            fix_namespace_susfs_mount
-        else
-            error "SuSFS core patch failed: 50_add_susfs_in_${SUSFS_PATCH}.patch (KERNEL_KMI=${KERNEL_KMI:-unset})"
-            return 1
-        fi
-    fi
-
-    if [ "$KERNEL_VERSION" = "6.12" ]; then
-      fix_task_mmu_corruption
+        error "SuSFS core patch failed: 50_add_susfs_in_${SUSFS_PATCH}.patch"
+        return 1
     fi
 
     SUSFS_VERSION=$(grep -E '^#define SUSFS_VERSION' ./include/linux/susfs.h | cut -d' ' -f3 | sed 's/"//g')
