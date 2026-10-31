@@ -161,11 +161,7 @@ if kernel_version_lt "$KERNEL_VERSION" "6.12"; then
   log "Applying NTSync patches..."
   curl -LSs "https://github.com/WildKernels/kernel_patches/raw/main/common/ntsync/ntsync_base.patch" | apply_patch_file
 
-  if kernel_version_eq "$KERNEL_VERSION" "6.1"; then
-    curl -LSs "https://github.com/WildKernels/kernel_patches/raw/main/common/ntsync/ntsync_compat_android14-6.1.patch" | apply_patch_file
-  else
-    apply_ntsync_compat_patch "$KERNEL_KMI"
-  fi
+  curl -LSs "https://github.com/WildKernels/kernel_patches/raw/main/common/ntsync/ntsync_compat_android14-6.1.patch" | apply_patch_file
   success "NTSync patches applied"
 fi
 
