@@ -4,7 +4,7 @@ import glob
 import os
 import re
 
-KERNEL_VERSION_ORDER = ["5.10", "5.15", "6.1", "6.6", "6.12"]
+KERNEL_VERSION_ORDER = ["6.1"]
 
 
 def read_or_default(path, default="*No changelog available*"):
