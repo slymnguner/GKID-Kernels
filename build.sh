@@ -92,8 +92,8 @@ SUSFS_BRANCH="gki-android14-6.1"
 SUSFS_PATCH="gki-android14-6.1"
 
 log "Changelog of repos"
-clone_susfs 5
-cd "$SUSFS_DIR"
+clone_susfs 5 || { error "susfs clone for changelog failed"; exit 1; }
+cd "$SUSFS_DIR" || { error "cd $SUSFS_DIR failed"; exit 1; }
 git log --pretty=format:"- [%h](https://${SUSFS_URL#https://}/commit/%H) %s" -5 "$SUSFS_BRANCH" \
 > "$RELEASE_DIR/susfs_changelog-${KERNEL_VERSION}.txt"
 cd ..
@@ -108,7 +108,7 @@ mkdir -p "$WORKDIR/neutron-clang"
 cd "$WORKDIR/neutron-clang"
 _antman_script=$(curl -fsSL "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman") || { error "antman download failed"; exit 1; }
 [ -n "$_antman_script" ] || { error "antman script empty"; exit 1; }
-bash <<<"$_antman_script" -S || { error "antman execution failed"; exit 1; }
+bash -s -- -S <<<"$_antman_script" || { error "antman execution failed"; exit 1; }
 cd "$WORKDIR" || { error "cd \$WORKDIR failed"; exit 1; }
 if [ ! -d "$CLANG_BIN" ]; then
     error "Clang not found in ${CLANG_BIN}."
@@ -118,6 +118,7 @@ fi
 export PATH="${CLANG_BIN}:$PATH"
 echo "::endgroup::"
 
+command -v ccache >/dev/null || { error "ccache not installed"; exit 1; }
 export CCACHE_DIR="$HOME/.ccache"
 export CCACHE_BASEDIR="$WORKDIR"
 export CCACHE_NOHARDLINK=true
@@ -180,7 +181,10 @@ set -eo pipefail
 if [ "$KSU" = "KSUN" ]; then
   if susfs_included; then
     log "KernelSU Next + SuSFS included (pershoot dev-susfs)"
-    curl -fLSs "https://raw.githubusercontent.com/pershoot/KernelSU-Next/refs/heads/dev-susfs/kernel/setup.sh" | bash -s dev-susfs
+      _knu_script=$(curl -fLSs "https://raw.githubusercontent.com/pershoot/KernelSU-Next/refs/heads/dev-susfs/kernel/setup.sh") \
+      || { error "KernelSU-Next setup.sh download failed (pershoot/dev-susfs)"; exit 1; }
+      [ -n "$_knu_script" ] || { error "KernelSU-Next setup.sh empty (pershoot/dev-susfs)"; exit 1; }
+      bash <<<"$_knu_script" -s dev-susfs || { error "KernelSU-Next setup.sh execution failed (pershoot/dev-susfs)"; exit 1; }
 
     KSUN_BRANCH="$(git -C "$KSRC/KernelSU-Next" symbolic-ref --short HEAD 2>/dev/null || true)"
     if [ "$KSUN_BRANCH" != "dev-susfs" ]; then
@@ -188,11 +192,14 @@ if [ "$KSU" = "KSUN" ]; then
       exit 1
     fi
 
-    clone_susfs
-    apply_susfs_patches
+    clone_susfs || { error "susfs clone failed (KSU+SUSFS path)"; exit 1; }
+    apply_susfs_patches || { error "apply_susfs_patches failed"; exit 1; }
   else
     log "KernelSU Next included (latest tagged release)"
-    curl -fLSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/dev/kernel/setup.sh" | bash -
+      _knu_dev_script=$(curl -fLSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/dev/kernel/setup.sh") \
+      || { error "KernelSU-Next setup.sh download failed (dev)"; exit 1; }
+      [ -n "$_knu_dev_script" ] || { error "KernelSU-Next setup.sh empty (dev)"; exit 1; }
+      bash <<<"$_knu_dev_script" - || { error "KernelSU-Next setup.sh execution failed (dev)"; exit 1; }
   fi
 fi
 
@@ -219,16 +226,20 @@ log "Applying configs..."
 source "$WORKDIR/configs/gki_defconfig.sh" || { error "sourcing gki_defconfig.sh failed"; exit 1; }
 
 if [ "${TODO:-kernel}" = "kernel" ]; then
-  LATEST_COMMIT_HASH=$(git rev-parse --short HEAD)
+  LATEST_COMMIT_HASH=$(git rev-parse --short HEAD 2>/dev/null) || { error "git rev-parse failed in $KSRC"; exit 1; }
   SUFFIX="${RUN_NUM}-${LATEST_COMMIT_HASH}"
   config --set-str CONFIG_LOCALVERSION "-${KERNEL_NAME}${SUFFIX}"
   config --disable CONFIG_LOCALVERSION_AUTO
-  sed -i 's/echo "+"/# echo "+"/g' scripts/setlocalversion
+  if [ -f scripts/setlocalversion ]; then
+    sed -i 's/echo "+"/# echo "+"/g' scripts/setlocalversion || warning "setlocalversion sed failed (non-fatal)"
+  else
+    warning "scripts/setlocalversion not found (non-fatal)"
+  fi
 fi
 
 export KBUILD_BUILD_USER="$USER"
 export KBUILD_BUILD_HOST="$HOST"
-export KBUILD_BUILD_TIMESTAMP=$(git -C $KSRC log -1 --format=%cd --date=format-local:'%a %b %d %T %z %Y')
+export KBUILD_BUILD_TIMESTAMP="$(git -C "$KSRC" log -1 --format=%cd --date=format-local:'%a %b %d %T %z %Y')"
 export KCFLAGS="-w"
 
 LINK_CACHE_PATH="/dev/shm/thinlto-cache"
@@ -393,11 +404,15 @@ if [ -f /mnt/swapfile ]; then
 fi
 
 warning "Creating 32GB swap"
-sudo fallocate -l 32G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=32768 status=none
-sudo chmod 600 /swapfile
-sudo mkswap /swapfile
-sudo swapon /swapfile
-success "32GB swap created and activated"
+if sudo fallocate -l 32G /swapfile 2>/dev/null \
+   || sudo dd if=/dev/zero of=/swapfile bs=1M count=32768 status=none 2>/dev/null; then
+  sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile \
+    || { error "swap enable failed (chmod/mkswap/swapon)"; exit 1; }
+  success "32GB swap created and activated"
+else
+  error "failed to allocate 32GB swapfile (disk full?)"
+  exit 1
+fi
 
 sudo sysctl -w vm.swappiness=90
 sudo sysctl -w vm.vfs_cache_pressure=200
@@ -416,7 +431,7 @@ make ${MAKE_ARGS[@]} CC="ccache clang" CXX="ccache clang++"
 echo "::endgroup::"
 set +eo pipefail
 
-cd $WORKDIR
+cd "$WORKDIR" || { error "cd $WORKDIR failed (pre-anykernel)"; exit 1; }
 
 log "Cloning anykernel from $(simplify_gh_url "$ANYKERNEL_REPO")"
 rm -rf anykernel
@@ -435,11 +450,11 @@ if [ ! -f "$KERNEL_IMAGE" ];then
   error "$KERNEL_IMAGE not found."
   exit 1
 fi
-cp "$KERNEL_IMAGE" .
+cp "$KERNEL_IMAGE" . || { error "cp Image to anykernel dir failed"; exit 1; }
 zip -r9 "$WORKDIR/$AK3_ZIP_NAME" ./* || { error "zip failed: $WORKDIR/$AK3_ZIP_NAME"; exit 1; }
 [ -f "$WORKDIR/$AK3_ZIP_NAME" ] || { error "zip produced no output: $WORKDIR/$AK3_ZIP_NAME"; exit 1; }
 cd "$WORKDIR" || { error "cd back failed"; exit 1; }
 
 echo "BASE_NAME=$KERNEL_NAME-$VARIANT" >> "${GITHUB_ENV:-/dev/null}"
-mkdir -p "$RELEASE_DIR"
+mkdir -p "$RELEASE_DIR" || { error "mkdir $RELEASE_DIR failed"; exit 1; }
 mv "$WORKDIR/$AK3_ZIP_NAME" "$RELEASE_DIR/" || { error "failed to move $AK3_ZIP_NAME to $RELEASE_DIR"; exit 1; }

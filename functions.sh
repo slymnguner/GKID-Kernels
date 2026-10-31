@@ -92,8 +92,14 @@ retry() {
     return 1
 }
 
-curl() { retry command curl "$@"; }
-wget() { retry command wget "$@"; }
+curl() {
+    command -v curl >/dev/null || { error "curl not installed"; return 127; }
+    retry command curl "$@"
+}
+wget() {
+    command -v wget >/dev/null || { error "wget not installed"; return 127; }
+    retry command wget "$@"
+}
 
 bash() {
     case "$*" in
@@ -142,9 +148,13 @@ generate_gh_changelog() {
     local count="${3:-5}"
     local output="$4"
 
-    gh api "repos/${repo}/commits?sha=${branch}&per_page=${count}" \
-        --jq '.[] | "- [" + .sha[0:7] + "](" + .html_url + ") " + (.commit.message | split("\n")[0])' \
-        > "$output"
+    if ! gh api "repos/${repo}/commits?sha=${branch}&per_page=${count}" \
+            --jq '.[] | "- [" + .sha[0:7] + "](" + .html_url + ") " + (.commit.message | split("\n")[0])' \
+            > "$output" 2>/dev/null; then
+        warning "changelog API failed for $repo@$branch"
+        echo "(changelog unavailable for $repo@$branch)" > "$output"
+        return 0
+    fi
 }
 
 apply_patch_file() {
@@ -305,7 +315,11 @@ apply_susfs_patches() {
         return 1
     fi
 
-    SUSFS_VERSION=$(grep -E '^#define SUSFS_VERSION' ./include/linux/susfs.h | cut -d' ' -f3 | sed 's/"//g')
+    SUSFS_VERSION=$(grep -E '^#define SUSFS_VERSION' ./include/linux/susfs.h 2>/dev/null | cut -d' ' -f3 | sed 's/"//g')
+    if [ -z "$SUSFS_VERSION" ]; then
+        warning "SUSFS_VERSION not detected in include/linux/susfs.h"
+        SUSFS_VERSION="unknown"
+    fi
     echo "SUSFS_VERSION=$SUSFS_VERSION" >> "${GITHUB_ENV:-/dev/null}"
 }
 
